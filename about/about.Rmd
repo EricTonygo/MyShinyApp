@@ -1,0 +1,281 @@
+---
+title: "about"
+author: "Tonygo"
+date: "10 février 2016"
+output: html_document
+---
+# Sommaire
+<ol style="font-size: 16px;">
+  <li>
+      <a id="ref-pres-dafsim" href="#pres-dafsim">Présentation de Dafsim </a>
+      <ol style="font-size: 14px;">
+        <li>
+            <a id="ref-objectif-dafsim" href="#objectif-dafsim">Objectif de DafSim </a>
+        </li>
+        <li>
+            <a id= "ref-ihm-dafsim" href="#ihm-dafsim" >Organisation de l'interface graphique de Dafsim</a>
+        </li>
+      </ol>
+  </li>
+  <li>
+      <a id= "ref-homepage-dafsim" href="#homepage-dafsim" >La page d'accueil</a>
+  </li>
+  <li>
+      <a id= "ref-sim-dyn" href="#sim-dyn" >La simulation de la dynamique forestière </a>
+      <ol style="font-size: 14px;">
+          <li>
+              <a id="ref-scenario-exp" href="#scenario-exp">Scénario d'exploitation forestière.</a>
+          </li>
+          <li>
+              <a id="ref-degats-post-exp" href="#degats-post-exp">Les dégats post-exploitation forestière.</a>
+          </li>
+          <li>
+              <a id="ref-dyn-nat" href="#dyn-nat">La dynamique forestière naturelle.</a>
+          </li>
+      </ol>
+  </li>
+  <li>
+      <a id="ref-simul-prop" href="#simul-prop">La simulation proprement dite.</a>
+  </li>
+  <li>
+      <a id="ref-simul-end" href="#simul-end">La fin de la simulation.</a>
+  </li>
+  <li>
+      <a id="ref-visual-result" href="#visual-result">La visualisation des résultats de la simulation.</a>
+      <ol style="font-size: 14px;">
+          <li>
+              <a id="ref-visual-indicateur" href="#visual-indicateur">Visualisation des indicateurs</a>
+          </li>
+          <li>
+              <a id="ref-visual-sd" href="#visual-sd">Visualisation de la strucure diamètrique des arbres.</a>
+              <ol style="font-size: 14px;">
+                  <li>
+                      <a id="ref-sd-cumulee" href="#sd-cumulee">La structure diamètrique cumulée </a>
+                  </li>
+                  <li>
+                      <a id= "ref-sd-parclasse" href="#sd-parclasse" >La structure diamètrique sous de repartition d'effectif par classe de diamètre</a>
+                  </li>
+            </ol>
+          </li>
+      </ol>
+  </li>
+</ol>
+
+## <a id="pres-dafsim" href="#ref-pres-dafsim">Présentation générale de DafSim </a>
+
+### <a id="objectif-dafsim" href="#ref-objectif-dafsim">Objectif de DafSim </a>
+
+DafSim est un logiciel de simulation dont le but est d'aider les gestionnaires des exploitations forestières dans leurs pratiques de gestion forestière. Il vous offre un simulateur de la dynamique forestière et des outils de visualisation des résultats de la simulation à travers le calcul de certains indicateurs pertinents de la gestion forestière tel que:
+* Stock exploitable
+* Le volume exploitable
+* Le nombre (stock) d’arbres
+* Le volume total de bois
+* La biomasse
+* La surface terrière
+* Le taux de reconstitution
+* La structure diamétrique (cumulée et sous forme de repartititon par classe de diamètre)
+
+Qui permettrons de mieux évaluer sur le long terme l'état prévisionnel de la forêt soumise aux effets des exploitations forestières.
+
+### <a id="ihm-dafsim" href="#ref-ihm-dafsim">Organisation de l'interface graphique de DafSim </a>
+
+Nous présenterons à la suite de cette partie, l'organisation de l'interface homme machine de cette application.
+
+Nous avons adopté une structure simple en matière de graphisme en vue de permettre à l'utilisateur de retrouver facilement les informations et d'acceder plus rapidement aux fonctionnalités de l'application. L’interface comporte trois parties principales à savoir:
+* __L’entête__ : la bande bleue au-dessus comportant simple le nom que nous avons attribué à l’application à savoir : « __DafSim__   ». c’est un bloc statique, il reste fixe durant toute la navigation de l’utilisateur.
+* __Le bloc latéral__ : la bande verticale noire comportant les différents menus qui donnent accès aux fonctionnalités de nos modules et les différentes rubriques de notre application. Il s'agit ici des menus : « __Accueil__ », « __Simulation__ » (le module   de simulation), « __Visualisation__ » (le module de visualisation des résultats issus de l’analyse des données) et « __Aide__ » (la rubrique réservée au manuel d’utilisation). Cette partie de l'interface reste aussi fixe durant la navigation de l'utilisateur.
+* __Le bloc central__ à l’intérieur duquel nous affichons les informations liées à chaque menu C’est le seul bloc dynamique de l’application. Nous l’utiliserons le plus souvent pour interaction entre l'utilisateur et l’application.    
+Dans la suite de ce manuel nous présenterons l'utilisation de cette application à travers les menus de notre bloc lateral
+
+```{r cars}
+
+```
+
+## <a id="homepage-dafsim" href="#ref-homepage-dafsim">La page d'accueil</a>
+
+C’est la page qui s’affiche dès le lancement de l’application. Elle comporte les trois partie de l'interface graphique comme nous l’avons présenté ci-dessus. A l’intérieur du bloc central, le seul bloc dynamique de l’application, nous retrouvons le logo du projet DynAfFor et une petite description de l’outil.
+
+![Page d'accueil de DafSim](images/page_accueil.png "page d'accueil")
+
+```{r pressure, echo=FALSE}
+
+```
+
+## <a id="sim-dyn" href="#ref-sim-dyn">Simulation de la dynamique forestière.</a>
+
+Nous avons regroupé les fonctionnalités liées à ce module dans le menu « __Simulation__ ».    
+Pour simuler la dynamique d’une forêt, il faut réaliser un scénario d'exploitation forestière, les dégats post-exploitation et enfin de préciser les paramètres de la dynamique naturelle de cette forêt. 
+
+```{r pressure, echo=FALSE}
+
+```
+
+### <a id="scenario-exp" href="#ref-scenario-exp">Scénario d'exploitation forestière.</a>
+
+Pour le faire il suffit de cliquer sur le menu « __Simulation__ » et de selectionner le premier onglet nommé "__Paramètres de l'exploitation__" sur la page qui apparait dans le __bloc central__ de l' interface graphique. Vous aurez devant vous la vue suivante:
+
+![Page de paramètres de l'exploitation](images/param_exploitation.png "interface de l'exploitation")
+
+La réalisation d'un scénario de d'exploitation forestière se fait à travers l'indication de certains paramètres liés à l'exploitation d'une forêt tel que: 
+* la liste des espèces exploitées, 
+* leur D.M.E (fixé par l'administration forestière du pays), 
+* leur D.M.A (D.M.A > D.M.E), 
+* leur taux de prélèvement (en pourcentage Exemple: 50.45), 
+* leur taux de recollement (en pourcentage Exemple: 50.45),
+* leur densité.
+
+Tous ces paramètres ont été regroupés à l'intérieur d'un tableau dans lequel les colonnes représente les valeurs de ces paramètres et les lignes les espèces disponibles dans la forêt. Lorsqu'une espèce est exploitée aucours d'un scénario d'exploitation forestière il suffit juste de remplir les valeurs des paramètres cités ci-dessus pour cette espèce en remplissant la ligne correspondante à l'espèce et la colonne correspondante au paramètre.    
+Lorsque certaines cellules d'une ligne(correspondant à une espèce) sont remplies et d'autre laissées vides des valeurs par défaut seront attribuées à ces paramètres. Nous vous donnons ici les valeurs par défaut de certains de ces paramètres:
+* D.M.A = D.M.E 
+* taux de prélèvement = 100 
+* taux de recollement = 100
+
+```{r pressure, echo=FALSE}
+
+```
+
+### <a id="degats-post-exp" href="#ref-degats-post-exp">Les dégats post-exploitation forestière.</a>
+
+En restant toujours sur le premier onglet (« __Paramètres de l'exploitation__ ») de la page du menu « __Simulation__ » tout en bas de la page en utilisant la barre de défilement vous trouverez la partie liée aux dégats post-exploitation forestière comme le montre la figure ci-dessous:
+
+![Page des dégats post-exploitation](images/vecteur_degats.png "l'interface des dégats post-exploitation")
+
+L'indication des degats post-exploitation forestière ce fait pour chaque classe de diamètre d'arbre recensée dans la forêt et ils se précisent en pourcentage (. Nous avons pour cela un tableau à une ligne représentation le vecteur des dégats post-exploitation avec un nombre de colonne représentation le nombre de classes de diamètre présentes dans la forêt.
+
+```{r pressure, echo=FALSE}
+
+```
+
+### <a id="dyn-nat" href="#ref-dyn-nat">La dynamique forestière naturelle.</a>
+
+![Page de paramètres de la dynamique naturelle](images/interface_sim.png "interface de simulation")
+
+En cliquant sur le deuxième onglet de la page du menu « __Simulation__ » vous arrivez sur l'interface permettant de renseigner les paramètres de la dynamique naturelle tel que:
+* La première année de la simulation (Exemple: 2016),
+* La première année d'exploitation (Exemple: 2016), 
+* Les parcelles à simuler,
+* Le nombre de rotation,
+* La durée d'une rotation,
+* Le nombre de rotation,
+* La première année de comparaison s'il faut valider les simulations avec les vraies données
+
+Une fois le scénario d'exploitation forestière réalisé, les dégats post-exploitation précisés et les paramètres de la dynamique forestière naturelle remplies, Vous avez deux actions possibles à réaliser
+* Lancer la simulation de la dynamique forestière en cliquant sur le bouton __Lancer la simulation__ juste en dessous
+* Sauvegarder les paramètres de la simulation dans un fichier de données au format .RData en cliquant sur le bouton __Sauvegarder le scénario__
+
+Si auparavant vous avez sauvegardé les paramètres de la simulation dans un fichier de données vous pouvez le charger ces paramètres à partir de ce fichier existant dans un disque dur ou un support amovible de votre ordinateur en cliquant sur le bouton __Charger un scénario__
+
+Tous ces boutons d'action se trouvent juste en dessous du panel d'onglets des paramètres de la simulation.
+
+```{r pressure, echo=FALSE}
+
+```
+
+## <a id="simul-prop" href="#ref-simul-prop">La simulation proprement dite.</a>
+
+Une fois le bouton __Lancer la simulation__ est appuyé, un test de conformité et de cohérence des données saisies est éffectué. S'il y existe des erreurs quelconques, un message est envoyé à l'utilisateur pour les corriger. Dès lors que les paramètres n'ont pas d'erreurs la simulation de la dynamique forestière est éffectivement lancée pendant laquelle on applique sur le peuplement forestier: le scéario d'exploitation forestière, puis les dégats post-exploitation forestière et enfin la dynamique naturelle à travers les phénomènes de croissance, de mortalité, et de regéneration des peuplements d'arbre.
+
+![Page de la simulation en cours](images/interface_launch_sim.png "interface de la simulation en cours")
+
+```{r pressure, echo=FALSE}
+
+```
+
+## <a id="simul-end" href="#ref-simul-end">La fin d'une simulation.</a>
+
+Elle se matérilise par l'apparition de l'icône vert du succès et le message vous indiquant que la simulation s'est terminée avec succès comme l'indique la figure ci-dessous.
+
+![Page de la fin de la simulation](images/interface_launch_sim.png "interface de la fin de la simulation")
+
+```{r pressure, echo=FALSE}
+
+```
+
+## <a id="visual-result" href="#ref-visual-result">La visualisation des résultats de la simulation.</a>
+La rubrique « __Visualisation__ » nous offre les outitls permettant d'apprecier l'état sur le long terme de la ressource forestière après avoir simuler la dynamique prévisionnelle de la forêt sur la base des hypothèses qui peuvent être réalistes ou imaginaires.   
+Nous avons séparé la rubrique « __Visualisation__ » en deux sous-parties « __Indicateurs__ » et « __Structure diamétrique__ » car la structure diamétrique est un indicateur particulier qu'il est interessant de suivre son évolution indépendamment des autres. Elle est souvent divisée en structure diamétrique cumulée et structure diamétrique sous forme d’effectifs repartis par classes de diamètre.
+
+```{r pressure, echo=FALSE}
+
+```
+
+### <a id="visual-indicateur" href="#ref-visual-indicateur">Les indicateurs</a>
+La sous partie de la rubrique « __Visualisation__ » permettant de suivre l'évolution des indicateurs de la gestion forestière tel que:
+
+* Stock exploitable
+* Le volume exploitable
+* Le nombre (stock) d’arbres
+* Le volume total de bois
+* La biomasse
+* La surface terrière
+* Le taux de reconstitution
+
+![Page de visualisation d'un indicateur](images/param_indicateur.png "interface de visualisation de l'indicateur")
+
+
+Pour visualiser l'évolution d'un indicateur il suffit le selectionner parmis la liste des indicateurs fournis(Exemple: Biomasse), puis de selectionner le groupe d'espèce pour lequel on veut visualiser l'évolution de l'indicateur, ensuite de preciser la plage de diamètre de arbres concernée et enfin la plage temporelle de l'évolution de l'indicateur.
+
+```{r pressure, echo=FALSE}
+
+```
+
+
+![Page de la courbe d'un indicateur](images/interface_trace_indicateur.png "interface de la courbe d'un indicateur")
+
+Lorsque les paramètres sont bien renseignés et corrects, cliquer sur le bouton __Visualiser__ pour afficher la courbe d'évolution de l'indicateur. Elle s'affiche dans l'onglet « __Représentation graphique__ ». Vous pouvez exporter le graphique visualisé en png, jpeg ou pdf en choissant le format d'export puis vous appuyez sur exporter. Le fichier est téléchargé et sauvegardé dans le dossier de téléchargement de votre système d'exploitation.
+
+```{r pressure, echo=FALSE}
+
+```
+
+![Page des table des données d'un indicateur](images/interface_data_indicateur.png "interface des données d'un indicateu")
+De la même manière, vous pouvez visualiser les données simulées qui ont permis de tracer le graphe d'évolution de l'indicateur en fonction des paramètres précedemment pour la visualisation de l'indicateur en cliquant sur l'onglet « __Données__ ».
+```{r pressure, echo=FALSE}
+
+```
+
+### <a id="visual-sd" href="#ref-visual-sd">Visualisation de la strucure diamètrique des arbres.</a>
+La structure diamétrique est la répartition des tiges par classes de diamètres, elle peut être établie en prenant en compte tous les individus et toutes espèces confondues. Elle est porteuse d’information sur la stabilité des espèces. Elle est peut être également établie par espèce et l’on parle de structure spécifique.
+Dans le cadre de ce logiciel __DafSim__, nous l'avons divisé en deux sous structure diametrique: 
+* Structure diamétrique cumulée des effectifs de toutes les classes d'une espèce ou d'un groupe d'espèces sur une période temporelle.
+* Structure diamétrique sous forme d’effectifs d'une espèces ou d'un groupe d'espèces reparties par classe de diamètre pour une année bien précise.
+
+```{r pressure, echo=FALSE}
+
+```
+
+#### <a id="sd-cumulee" href="#ref-sd-cumulee">La structure diamètrique cumulée </a>
+Pour visualiser la structure diamètrique cumulée, il suffit de choisir l'espèce ou le groupe d'espèce pour lequel vous voulez calculer la structure diamètrique. Puis vous appuyez sur le bouton __Visualiser__. Le resultat sera afficher dans l'onglet « __Représentation graphique__ » sous la forme d'un graphe d'évolution sur la plage temporelle de la simulation. Comme le montre la figure suivante:
+
+![Page de visualisation d'une structure diamètrique](images/structure_diametrique.png "interface de visualisation de l'indicateur")
+
+```{r pressure, echo=FALSE}
+
+```
+
+Les données simulées de cette structure diamètrique qui ont permis de tracer son graphe d'évolution des effectifs cumulés sont représentées dans l'onglet « __Données__ » de la même page. Comme le montre la figure ci-dessous.
+
+![Page de visualisation des données d'une structure diamètrique ](images/structure_diametrique_data.png "interface de visualisation de l'indicateur")
+
+```{r pressure, echo=FALSE}
+
+```
+
+#### <a id= "sd-parclasse" href="#ref-sd-parclasse" >La structure diamètrique sous de repartition d'effectif par classe de diamètre</a>
+
+Elle permet pour une année donnée de visualiser sous forme diagramme à bande la répartition des effectifs des arbres dans chaque classe de diamètre.
+Pour le faire, il faut choisir l'espèce ou le groupe d'espèces pour lequel vous voulez visualiser l'indicateur et l'année à laquelle vous voulez afficher cette structure diametrique par classe de diamètre
+
+![Page de visualisation d'une structure diam](images/param_sd_histo.png "interface de visualisation de la SD par classe de diamètre")
+
+Une fois que ces paramètres sont spécifiés de manière correcte, Vous pouvez visualiser la diagramme à bande de repartition des effectifs par classe représentation notre structure diamétrique en cliquant sur le bouton __Visualiser__. Ce diagramme s'afficher alors comme les précédents graphe dans l'onglet « __Représentation graphique__ ». Comme le presente la figure ci-dessous.
+
+![Page de visualisation d'un indicateur](images/structure_diametrique_histo_trace.png "interface de visualisation de l'indicateur")
+
+```{r pressure, echo=FALSE}
+
+```
+
+
+
+![Page de visualisation d'un indicateur](images/structure_diametrique_histo_data.png "interface de visualisation de l'indicateur")

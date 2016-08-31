@@ -1,0 +1,13 @@
+---
+title: "about"
+author: "Eric Tonye"
+date: "30 mai 2016"
+output: html_document
+---
+
+__DafSim__ est un logiciel de simulation dont le but est d'aider les gestionnaires des exploitations forestières dans leurs pratiques de gestion forestière. Il vous offre un simulateur de la dynamique forestière et des outils de visualisation des résultats de la simulation à travers le calcul de certains indicateurs pertinents de la gestion forestière.
+Nous présentons à la suite de cette partie, l'organisation de l'interface graphique de cette application.
+Nous avons adopté une structure simple en matière de graphisme en vue de permettre à l’utilisateur de retrouver et d’accéder facilement aux informations. L’interface comporte trois parties principales à savoir:
+* L’entête : la bande bleue au-dessus comportant simple le nom que nous avons attribué à l’application à savoir : « DafSim ». c’est un bloc statique, il reste fixe durant toute la navigation de l’utilisateur.
+* Le bloc latéral : la bande verticale noire comportant les différentes fonctionnalités de nos modules et les différentes    rubriques de notre application. Nous les avons présentés ici sous forme de menu : « Accueil », « Simulation » (le module de simulation), « Visualisation » (le module de visualisation des résultats issus de l’analyse des données) et « Aide »    (la rubrique réservée au manuel d’utilisation). Il est aussi statique.
+* Le bloc central à l’intérieur duquel nous affichons les informations liées à chaque rubrique. C’est le seul bloc dynamique de l’application. Nous l’utiliserons le plus souvent pour interagir avec l’application.

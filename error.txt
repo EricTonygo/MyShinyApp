@@ -1,0 +1,5 @@
+Error in private$websocket$send(json) : 
+  Can't send message on a closed WebSocket
+In addition: Warning message:
+In rm(list = as.character(handle), pos = .wsconns) :
+  object '166074688' not found
