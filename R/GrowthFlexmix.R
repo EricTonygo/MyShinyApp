@@ -1,4 +1,4 @@
-GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicator= NULL){
+GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NULL,OtherIndicator= NULL){
   
   # Fonction qui constitue les groupes d'IdVern par une proc?dure EM en utilisant FLEXMIX
   # Le choix du meilleur nombre de groupe est fait ? partir du crit?re ICL
@@ -27,6 +27,13 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicat
   # Internal functions #
   ######################
   
+  GetTabST<-function(CDSTB){
+    TabST = rep(0, NbClasse)
+    for (t in 1:(NbClasse)){
+      TabST [t]= CDSTB$ST[CDSTB$ClassesDiam == t][1]
+    }
+    return(TabST)
+  }
   
   FormatDataGrowthFlexmix<-function(Data,ClassesDiam,NbClasse,Surface,CDSTB){
     
@@ -43,8 +50,7 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicat
     
     
     # Calcul surface terri?re en m2
-    
-    VectST=c(0,CDSTB$ST)
+    VectST=c(0,GetTabST(CDSTB = CDSTB))
     Data$ST0=VectST[(Data$Classe0+1)]
     Data$Effect0=Data$Classe0>0
     
@@ -248,7 +254,7 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicat
   
   
   SimGrowth=list()
-  SimGrowth$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, OtherIndicator = OtherIndicator)
+  SimGrowth$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator = OtherIndicator)
   
   
   # Formatting Data                     
@@ -368,7 +374,7 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicat
     NbClasse=nrow(Eff.cur)
     NbIdVern=ncol(Eff.cur)
     Effectifs.totaux=apply(Eff.cur,1,sum)
-    STTC=Effectifs.totaux*SimGrowth$CDSTB$ST
+    STTC=Effectifs.totaux*GetTabST(CDSTB = SimGrowth$CDSTB)
     datapred=c(1,STTC)
     PbGrowth=matrix(nrow=(NbClasse-1),ncol=NbIdVern)
     Eff.cur=Eff.cur-Mort

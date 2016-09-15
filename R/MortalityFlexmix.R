@@ -1,4 +1,4 @@
-MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicator= NULL){
+MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NULL, OtherIndicator= NULL){
   
   # Fonction qui constitue les groupes d'IdVern par une proc?dure EM en utilisant FLEXMIX
   # Le choix du meilleur nombre de groupe est fait ? partir du crit?re ICL
@@ -25,6 +25,13 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndi
   # Internal functions #
   ######################
   
+  GetTabST<-function(CDSTB){
+    TabST = rep(0, NbClasse)
+    for (t in 1:(NbClasse)){
+      TabST [t]= CDSTB$ST[CDSTB$ClassesDiam == t][1]
+    }
+    return(TabST)
+  }
   
   FormatDataMortalityFlexmix<-function(Data,ClassesDiam,NbClasse,Surface,CDSTB){
     
@@ -41,8 +48,7 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndi
     
     
     # Calcul surface terri?re en m2
-
-    VectST=c(0,CDSTB$ST)
+    VectST=c(0,GetTabST(CDSTB = CDSTB))
     Data$ST0=VectST[(Data$Classe0+1)]
     Data$Effect0=Data$Classe0>0
     
@@ -252,7 +258,7 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndi
  
   
   SimMort=list()
-  SimMort$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, OtherIndicator = OtherIndicator)
+  SimMort$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator = OtherIndicator)
   
   
   # Formatting Data                     
@@ -365,10 +371,9 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", OtherIndi
     NbClasse=nrow(Eff.cur)
     NbIdVern=ncol(Eff.cur)
     Effectifs.totaux=apply(Eff.cur,1,sum)
-    STTC=Effectifs.totaux*SimMort$CDSTB$ST
+    STTC=Effectifs.totaux*GetTabST(CDSTB = SimMort$CDSTB)
     datapred=c(1,STTC)
     PbMortality=matrix(nrow=NbClasse,ncol=NbIdVern)
-
     for (cl in 1:(NbClasse)){
       CL=1/(1+exp(-datapred%*%SimMort$ParamGp[[cl]]))
       PbMortality[cl,]=CL[SimMort$Gp[,cl+1]]

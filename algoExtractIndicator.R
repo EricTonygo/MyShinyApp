@@ -19,11 +19,13 @@ PlotMyIndicator <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, MyClasse
   if (is.null(Verif)) Verif=out.FCM$Check
   StartingDate=out.FCM$StartingDate
   Simulations=data.table(out.FCM$Simulations,key="Id.sp")
-  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB,key="ClassesDiam")
+  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB)
+  setkeyv(DataOutputs, c("Id.sp", "ClassesDiam"))
+  #browser()
   if(!is.null(MyClassesDiam)){
     DataOutputs = DataOutputs[ClassesDiam %in% MyClassesDiam]
   }
-  NbClasse=nrow(DataOutputs)
+  NbClasse=length(levels(DataOutputs$ClassesDiam))
   DataTraits=data.table(out.FCM$SpeciesTraits,key="Id.sp")
   DataTraits$Id.sp=as.factor(DataTraits$Id.sp)
   Lab.period=out.FCM$ParamPlot$Lab.period
@@ -38,9 +40,9 @@ PlotMyIndicator <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, MyClasse
   eval(parse(text = ExpEvalSim))
   
   #browser()
-  Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
-  Simulations=merge(Simulations,DataOutputs,by="ClassesDiam",all.x=F,all.y=F)
-  
+  Simulations=merge(Simulations,DataTraits,by="Id.sp", all.x=F,all.y=F)
+  Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=F,all.y=F)
+
   if(MyIndicator$VarInd == "AGB"){
     Simulations[,AGBt:=AGB*Effectifs*WSG]
   }else{
@@ -67,7 +69,7 @@ PlotMyIndicator <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, MyClasse
   if (Verif){
     DataVerif=data.table(out.FCM$DataVerif,key="Id.sp")
     DataVerif=merge(DataVerif,DataTraits,by="Id.sp",all.x=T,all.y=F)
-    DataVerif=merge(DataVerif,DataOutputs,by="ClassesDiam",all.x=T,all.y=F)
+    DataVerif=merge(DataVerif,DataOutputs,by=c("Id.sp","ClassesDiam"),all.x=T,all.y=F)
     DataVerif=DataVerif[ClassesDiam %in% MyClassesDiam]
     ExpEvalSim = paste0("DataVerif[,",MyIndicator$VarInd,"t:=",MyIndicator$VarInd,"*Effectifs]", collapse = '')
     eval(parse(text = ExpEvalSim))
@@ -80,6 +82,7 @@ PlotMyIndicator <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, MyClasse
   for (g in 1:length(Groups)){
     
     SimulationTmp=subset(Simulations,Id.sp%in%Groups[[g]])
+    #browser()
     
     ExpEvalSim = paste0("Indicateurs=SimulationTmp[,list(", MyIndicator$VarInd,"s=sum(",MyIndicator$VarInd,'t)),by="Id.zone,iter,Temps"]',collapse = '')
     eval(parse(text = ExpEvalSim))

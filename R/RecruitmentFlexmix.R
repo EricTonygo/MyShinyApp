@@ -1,4 +1,4 @@
-RecruitmentFlexmix <-function(DataFormatted,ParamFiles,criterion="BIC", OtherIndicator= NULL){
+RecruitmentFlexmix <-function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NULL, OtherIndicator= NULL){
 
   
 library(flexmix)  
@@ -13,6 +13,15 @@ library(flexmix)
 # Internal functions #
 ######################
 
+  GetTabST<-function(CDSTB){
+    TabST = rep(0, NbClasse)
+    for (t in 1:(NbClasse)){
+      TabST [t]= CDSTB$ST[CDSTB$ClassesDiam == t][1]
+    }
+    #browser()
+    return(TabST)
+  }
+  
 FormatDataRecruitmentFlexmix <- function(Data,ClassesDiam,NbClasse,Surface,CDSTB){
   library(data.table)
   
@@ -28,9 +37,8 @@ FormatDataRecruitmentFlexmix <- function(Data,ClassesDiam,NbClasse,Surface,CDSTB
   
   
   # Calcul surface terri?re en m2
-  
 
-  VectST=c(0,CDSTB$ST)
+  VectST=c(0,GetTabST(CDSTB = CDSTB))
   Data[,ST0:=VectST[(Classe0+1)]]
   Data[,Effect0:=as.numeric(Classe0>0)]
   
@@ -230,7 +238,7 @@ GpParamApartSpecies<-function(Gp,ParamGp,ListApartSpecies,Model,Family,Data,comp
 
 
   SimRecrut=list()
-  SimRecrut$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, OtherIndicator= OtherIndicator)
+  SimRecrut$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator= OtherIndicator)
 
 
   # Formatting Data      
@@ -336,7 +344,7 @@ GpParamApartSpecies<-function(Gp,ParamGp,ListApartSpecies,Model,Family,Data,comp
   SimRecrut$Func <-function(Eff.cur,SimRecrut){
     
     Effectifs.totaux=apply(Eff.cur,1,sum)
-    STTC=Effectifs.totaux*SimRecrut$CDSTB$ST
+    STTC=Effectifs.totaux*GetTabST(CDSTB = SimRecrut$CDSTB)
     datapred=cbind(data.frame(t(log(1+Eff.cur)),t(STTC)))
     if (length(SimRecrut$VarRecrut)>0){
       colnames(datapred)=SimRecrut$NomsDataPred

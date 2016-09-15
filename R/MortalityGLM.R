@@ -133,7 +133,7 @@ MortalityGLM <- function(DataFormatted,ParamFiles,criterion="BIC"){
  
   
   SimMort=list()
-  SimMort$CDSTB=ClasseDiamSTAGB(ClassesDiam,alpha=DataFormatted$alpha)
+  #SimMort$CDSTB=ClasseDiamSTAGB(ClassesDiam,alpha=DataFormatted$alpha)
   
   
   # Formatting Data                     

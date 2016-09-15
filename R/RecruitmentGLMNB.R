@@ -107,7 +107,7 @@ RecruitmentGLMNB <- function(DataFormatted,ParamFiles,criterion="BIC"){
   
   
   SimRecrut=list()
-  SimRecrut$CDSTB=ClasseDiamSTAGB(ClassesDiam,alpha=DataFormatted$alpha)
+  #SimRecrut$CDSTB=ClasseDiamSTAGB(ClassesDiam,alpha=DataFormatted$alpha)
   
   
   # Formatting Data      

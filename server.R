@@ -23,15 +23,17 @@ shinyServer(function(input, output, session){
     stopApp()
   })
   volumes <- getVolumes()
-  shinyFileSave(input, 'save_config', session=session, roots=volumes, restrictions = system.file(package = "base"))
+  roots = c(wd="./ParametresSimulation")
+  shinyFileSave(input, 'save_config', session=session, roots=roots, restrictions = system.file(package = "base"))
   shinyFileChoose(input, 'load_config', session=session,
-                  roots=volumes, filetypes=c('', 'RData'))
+                  roots=roots, filetypes=c('', 'RData'))
   assign("DataToExport", data.table(),envir = .GlobalEnv)
   assign("PlotToExport", ggplot(), envir = .GlobalEnv)
   assign("PlotSTToExport", ggplot(), envir = .GlobalEnv)
   assign("ListOfIndicators", buildListIndicator(), envir = .GlobalEnv)
   assign("alphaInd", NULL, envir = .GlobalEnv)
   assign("choicesParcelles", NULL, envir = .GlobalEnv)
+  assign("hidable", FALSE, envir = .GlobalEnv)
   updateSelectIndicator <-function(){
     vectorIndicator = c()
     for(i in 1:length(ListOfIndicators)){
@@ -74,6 +76,8 @@ shinyServer(function(input, output, session){
   observeEvent(input$gotoparameters, {
     #createAlert(session, "alert", "exampleAlert", style = "success",content = "Echec de la simulation.", append = FALSE)
     shinyjs::hide('boxloader')
+    shinyjs::hide('image_failure')
+    shinyjs::hide('sim_failure')
     shinyjs::show('param_sim_logging')
     shinyjs::show('lancer_sim_col')
     shinyjs::hide('gotoparameters_col')
@@ -86,38 +90,46 @@ shinyServer(function(input, output, session){
     #shinyjs::info("loading finish")
     #test=InferFCM(MBaikiFormatted,"ParamInferenceMBaiki.R")
     error_sim= FALSE
-    hidable = FALSE
+    #hidable = FALSE
     simulation.input <- reactive({
       Date1PostLog.Check = 0
       validate(
         need(input$anneedebutSim != "", "Vueillez entrer la date de debut de la simulation"),
         need(input$anneefirstlogging !="", "Veuillez entrer la date de la première exploitation"),
-        need(input$parcelle != "", "Vueillez selectionner les parcelles à simuler"),
-        need(input$anneefirstlogging !="", "Veuillez entrer la date de la première exploitation"),
-        need(input$nombrerotation != "", "Vueillez entrer la date de debut de la simulation"),
-        need(input$nbchain != "", "Vueillez le nombre de simulation"),
-        need(input$dureerotation !="", "Veuillez entrer la date de la première exploitation"),
+        if(input$Allparcelle == FALSE){
+          need(input$parcelle != "", "Vueillez selectionner les parcelles à simuler")
+        },
+        need(input$nombrerotation != "", "Vueillez entrer le nombre de rotation"),
+        need(input$dureesimulation !="", "Veuillez entrer la durée de la simulation"),
+        need(input$nbchain != "", "Vueillez entrer le nombre de simulation"),
+        need(input$dureerotation !="", "Veuillez entrer la durée d'une rotation"),
         if(input$check == TRUE){
-          need(!is.null(input$firstyearcompare), "veuillez renseigner la première année.")
-        }
+          need(!is.null(input$firstyearcompare), "veuillez renseigner la première année de comparaison avec les données réelles.")
+        },
+        need(as.numeric(input$anneedebutSim) <= as.numeric(input$anneefirstlogging), "La première année d'exploitation doit être supérieure ou égale à l'année de debut de la simulation"),
+        need(((as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim))+ as.numeric(input$nombrerotation)*as.numeric(input$dureerotation)) <= as.numeric(input$dureesimulation), paste0("La durée de la simulation doit être supérieure à ",((as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim))+ as.numeric(input$nombrerotation)*as.numeric(input$dureerotation))))
         
       )
+      tarifgenerique = input$tarifgenerique
+      if(tarifgenerique ==""){
+        tarifgenerique = "10^(-2.96+1.93*log10(d))"
+      }
       if (!is.null(input$data_logging)) {
+        
         DF  <-  hot_to_r(input$data_logging)
         DF_SAVE <- DF
-        #DF <-  subset(DF, DF$D.M.A!="NA")
-        #DF$D.M.A = DF$D.M.E 
-        Dme = DF$D.M.E[0]
-        DF$D.M.A[DF$D.M.A=="NA" & (DF$Taux_de_prelevement !="NA" | DF$coefficient_de_recollement!="NA" | DF$Tarif_de_cubage== "NA")]=Dme
-        DF$D.M.A[DF$D.M.A=="NA" & DF$Taux_de_prelevement =="NA" & DF$coefficient_de_recollement=="NA" & DF$Tarif_de_cubage== "NA"]=Inf
-        DF$Taux_de_prelevement[DF$Taux_de_prelevement=="NA" & DF$D.M.A!="NA"]=100
-        DF$Coefficient_de_recolement[DF$Coefficient_de_recolement=="NA" & DF$D.M.A!="NA"]=100
-        DF$Taux_de_prelevement[DF$Taux_de_prelevement=="NA"]=0
-        DF$Coefficient_de_recolement[DF$Coefficient_de_recolement=="NA"]=0
-        DF$Taux_de_prelevement = as.numeric(DF$Taux_de_prelevement)/100
-        DF$Coefficient_de_recolement = as.numeric(DF$Coefficient_de_recolement)/100
+        DF$Taux_de_prelevement = as.numeric(DF$Taux_de_prelevement)
+        DF$Coefficient_de_recolement = as.numeric(DF$Coefficient_de_recolement)
         DF$D.M.A = as.numeric(DF$D.M.A)
-        SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=DF$D.M.A, tauxPrelevement= DF$Taux_de_prelevement, coefRecollement = DF$Coefficient_de_recolement) 
+        DF$Taux_de_prelevement[is.na(DF$Taux_de_prelevement) & !is.na(DF$D.M.A)]=100
+        DF$Coefficient_de_recolement[is.na(DF$Coefficient_de_recolement) & !is.na(DF$D.M.A)]=100
+        DF$Taux_de_prelevement[is.na(DF$Taux_de_prelevement)]=0
+        DF$Coefficient_de_recolement[is.na(DF$Coefficient_de_recolement)]=0
+        DF$D.M.A[is.na(DF$D.M.A)]= Inf
+        DF$Taux_de_prelevement = DF$Taux_de_prelevement/100
+        DF$Coefficient_de_recolement = DF$Coefficient_de_recolement/100
+        DF$Tarif_de_cubage[DF$Tarif_de_cubage=="NA" | DF$Tarif_de_cubage==""]= tarifgenerique
+        SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=DF$D.M.A, tauxPrelevement= DF$Taux_de_prelevement, coefRecollement = DF$Coefficient_de_recolement, tarifs = DF$Tarif_de_cubage, TarifGenerique = tarifgenerique) 
         #browser()
         if(!error_sim && nrow(subset(SpeciesTraits, SpeciesTraits$DMA<SpeciesTraits$DME))!=0){
           error_sim= TRUE
@@ -134,14 +146,15 @@ shinyServer(function(input, output, session){
       }else{
         DF_SAVE <- NULL
         MBaikiSpeciesTraits = MBaikiFormatted$TraitData
-        DF <- data.frame(codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(Inf, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep("", length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
+        DF <- data.frame(codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(Inf, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep(tarifgenerique, length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
         SpeciesTraits= data.frame(Id.sp= DF$codeEspece, WSG = DF$densite, DME= DF$dme, DMA=DF$dma, tauxPrelevement= DF$tauxPrelevement, coefRecollement = DF$coefRecollement)
         #SpeciesTraits = NULL
       }
       if (!error_sim && !is.null(input$vector_damage)) {
         VD  <-  hot_to_r(input$vector_damage)
         VD_SAVE <- VD
-        VD[VD=="NA"]=0
+        VD[VD=="NA" | VD==""]=0
+        #browser()
         v=c()
         for (i in 1:ncol(VD)){
           v = c(v,as.numeric(VD[[i]][1]))
@@ -164,28 +177,36 @@ shinyServer(function(input, output, session){
         shinyjs::hide('sim_finish')
         shinyjs::hide('param_sim_logging')
         shinyjs::hide('actions_sim')
-        hidable = TRUE
+        assign("hidable", TRUE, envir = .GlobalEnv)
+        print(hidable)
         nbchain = input$nbchain
-        Starting.plot= as.numeric(input$parcelle)
+        load("data/DataMBaikiFCM.RData")
+          if(input$Allparcelle == TRUE){
+            Starting.plot= as.numeric(levels(MBaikiFormatted$SimulatingData$Id.zone))
+          }else{
+            Starting.plot= as.numeric(input$parcelle)
+          }
+        
         StartingDate = as.numeric(input$anneedebutSim)
         Nb.rotation = as.numeric(input$nombrerotation)
         rotation = as.numeric(input$dureerotation)
         DelayLogging =as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim)
+        Fin.simu = as.numeric(input$dureesimulation)
         Date1PostLog.Check = input$firstyearcompare
         Check = input$check
         if(is.na(Check) || !is.logical(Check)) Check = FALSE
         MySpeciesTraits = SpeciesTraits
         vector_damage = v/100
+        #browser()
         Logging="T2.MBaiki"
-        load("data/DataMBaikiFCM.RData")
         load("data/FileIndicateur.RData")
-        test=InferFCM(MBaikiFormatted,"ParamInferenceMBaiki.R", listeIndicateur= listeIndicateur)
+        test=InferFCM(MBaikiFormatted,"ParamInferenceMBaiki.R", SpeciesTraits = MySpeciesTraits, listeIndicateur= listeIndicateur)
         save(test,file="data/out-inferFCM.RData")
         tryCatch({
           rm(test)
         })
         load("data/out-inferFCM.RData")
-        ParamSim = list(Nb.rotation = Nb.rotation, rotation = rotation, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = vector_damage, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = MySpeciesTraits, Logging = Logging)
+        ParamSim = list(Nb.rotation = Nb.rotation, rotation = rotation, Fin.simu = Fin.simu, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = vector_damage, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = MySpeciesTraits, Logging = Logging, Tarifgenerique = tarifgenerique)
         ResultTestMB= FCM(out.InferFCM=test, ParamSim)
         #load("data/ResultTestMB.RData")
         Nb.period=ResultTestMB$ParamPlot$Nb.period
@@ -215,7 +236,6 @@ shinyServer(function(input, output, session){
       simulation.input()
       print("End Sim")
     }, error=function(e){
-      shinyjs::info(e)
       if(hidable){
         shinyjs::hide('loader_sim')
         shinyjs::hide('sim_encours')
@@ -225,61 +245,68 @@ shinyServer(function(input, output, session){
         shinyjs::hide('lancer_sim_col')
         shinyjs::show('gotoparameters_col')
       }
+     shinyjs::info(e)
+      
     })
   })
   
   ################################ Sauvegarde des paramètres de la dynamique forestière ##############################
   observeEvent(input$save_config,{
     tryCatch({
-      inFile = parseSavePath(volumes, input$save_config)
+      inFile = parseSavePath(roots, input$save_config)
       Savepath = as.character(inFile$datapath)
       print(Savepath)
       error_sim = FALSE
+      
+      tarifgenerique = input$tarifgenerique
+      if(tarifgenerique ==""){
+        tarifgenerique = "10^(-2.96+1.93*log10(d))"
+      }
       if (!is.null(input$data_logging)) {
         DF  <-  hot_to_r(input$data_logging)
         DF_SAVE <- DF
-        #DF$D.M.A[DF$D.M.A=="NA"]=Inf
-        Dme = DF$D.M.E[0]
-        DF$D.M.A[DF$D.M.A=="NA" | (DF$Taux_de_prelevement =="NA" & DF$coefficient_de_recollement=="NA" & DF$Tarif_de_cubage== "NA")]=Dme
-        DF$D.M.A[DF$D.M.A=="NA" & DF$Taux_de_prelevement =="NA" & DF$coefficient_de_recollement=="NA" & DF$Tarif_de_cubage== "NA"]=Inf
-        DF$Taux_de_prelevement[DF$Taux_de_prelevement=="NA" & DF$D.M.A!="NA"]=1
-        DF$Coefficient_de_recolement[DF$Coefficient_de_recolement=="NA" & DF$D.M.A!="NA"]=1
-        DF$Taux_de_prelevement[DF$Taux_de_prelevement=="NA"]=0
-        DF$Coefficient_de_recolement[DF$Coefficient_de_recolement=="NA"]=0
         DF$Taux_de_prelevement = as.numeric(DF$Taux_de_prelevement)
         DF$Coefficient_de_recolement = as.numeric(DF$Coefficient_de_recolement)
         DF$D.M.A = as.numeric(DF$D.M.A)
-        SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=as.numeric(DF$D.M.A), tauxPrelevement= as.numeric(DF$Taux_de_prelevement), coefRecollement = as.numeric(DF$Coefficient_de_recolement)) 
+        DF$Taux_de_prelevement[is.na(DF$Taux_de_prelevement) & !is.na(DF$D.M.A)]=100
+        DF$Coefficient_de_recolement[is.na(DF$Coefficient_de_recolement) & !is.na(DF$D.M.A)]=100
+        DF$Taux_de_prelevement[is.na(DF$Taux_de_prelevement)]=0
+        DF$Coefficient_de_recolement[is.na(DF$Coefficient_de_recolement)]=0
+        DF$D.M.A[is.na(DF$D.M.A)]= Inf
+        DF$Taux_de_prelevement = DF$Taux_de_prelevement/100
+        DF$Coefficient_de_recolement = DF$Coefficient_de_recolement/100
+        DF$Tarif_de_cubage[DF$Tarif_de_cubage=="NA" | DF$Tarif_de_cubage==""]= "10^(-2.96+1.93*log10(d))"
+        SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=DF$D.M.A, tauxPrelevement= DF$Taux_de_prelevement, coefRecollement = DF$Coefficient_de_recolement, tarifs = DF$Tarif_de_cubage) 
         if(!error_sim && nrow(subset(SpeciesTraits, SpeciesTraits$DMA<SpeciesTraits$DME))!=0){
           error_sim= TRUE
           error_sim_msg= "Il y a des espèces ayant un DMA inférieur au DME. Veuillez corriger ces informations."
         }
         if(!error_sim && nrow(subset(SpeciesTraits,SpeciesTraits$tauxPrelevement<0|SpeciesTraits$tauxPrelevement>1))!=0){
           error_sim= TRUE
-          error_sim_msg= "Un taux de prélèvement doit être compris entre 0 et 1. Veuillez corriger ces informations."
+          error_sim_msg= "Un taux de prélèvement doit être compris entre 0 et 100. Veuillez corriger ces informations."
         }
         if(!error_sim && nrow(subset(SpeciesTraits,SpeciesTraits$tauxRecolement<0|SpeciesTraits$tauxRecolement>1))!=0){
           error_sim= TRUE
-          error_sim_msg= "Un taux de recolement doit être compris entre 0 et 1. Veuillez corriger ces informations."
+          error_sim_msg= "Un taux de recolement doit être compris entre 0 et 100. Veuillez corriger ces informations."
         }
       }else{
         DF_SAVE <- NULL
         MBaikiSpeciesTraits = MBaikiFormatted$TraitData
-        DF <- data.frame(codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(Inf, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep("", length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
+        DF <- data.frame(codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(Inf, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep("10^(-2.96+1.93*log10(d))", length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
         SpeciesTraits= data.frame(Id.sp= DF$codeEspece, WSG = DF$densite, DME= DF$dme, DMA=DF$dma, tauxPrelevement= DF$tauxPrelevement, coefRecollement = DF$coefRecollement)
         #SpeciesTraits = NULL
       }
       if (!error_sim && !is.null(input$vector_damage)) {
         VD  <-  hot_to_r(input$vector_damage)
         VD_SAVE <- VD
-        VD[VD=="NA"]=0
+        VD[VD=="NA" | VD==""]=0
         v=c()
         for (i in 1:ncol(VD)){
           v = c(v,as.numeric(VD[[i]][1]))
         }
-        if(length(v[which(v<0|v>1)])!=0){
+        if(length(v[which(v<0|v>100)])!=0){
           error_sim= TRUE
-          error_sim_msg= "Le dommage doit être compris entre 0 et 1. Veuillez corriger ces informations"
+          error_sim_msg= "Le dommage en (%) doit être compris entre 0 et 100. Veuillez corriger ces informations"
         }
       }else{
         VD  <-  NULL
@@ -293,11 +320,12 @@ shinyServer(function(input, output, session){
         Nb.rotation = as.numeric(input$nombrerotation)
         rotation = as.numeric(input$dureerotation)
         DelayLogging =as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim)
+        Fin.simu = as.numeric(input$dureesimulation)
         Date1PostLog.Check = input$firstyearcompare
         Check.Allparcelle = input$Allparcelle
         Check = input$check
         StartingLogging = as.numeric(input$anneefirstlogging)
-        ParamSim = list(StartingLogging = StartingLogging, Check.Allparcelle = Check.Allparcelle, Nb.rotation = Nb.rotation, rotation = rotation, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = VD_SAVE, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = DF_SAVE)
+        ParamSim = list(StartingLogging = StartingLogging, Check.Allparcelle = Check.Allparcelle, Fin.simu = Fin.simu, Nb.rotation = Nb.rotation, rotation = rotation, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = VD_SAVE, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = DF_SAVE , Tarifgenerique = tarifgenerique)
         ParamSim$vector_damage = VD_SAVE
         ParamSim$MySpeciesTraits = DF_SAVE
         save(ParamSim, file = Savepath)
@@ -314,34 +342,47 @@ shinyServer(function(input, output, session){
   ############ Charger le dernier paramètrage #########################
   observeEvent(input$load_config,{
     tryCatch({
-      inFile = parseFilePaths(volumes, input$load_config)
+      inFile = parseFilePaths(roots, input$load_config)
       Loadpath = as.character(inFile$datapath)
       load(Loadpath)
       MySpeciesTraits = ParamSim$MySpeciesTraits
       if(!is.null(MySpeciesTraits)){
         output$data_logging <-rhandsontable::renderRHandsontable({
-          rhandsontable::rhandsontable(MySpeciesTraits, colHeaders = c("Nom", "Code_espece", "D.M.E", "D.M.A", "Taux_de_prelevement", "Coefficient_de_recolement", "Tarif_de_cubage", "densite"), selectCallback = TRUE, useTypes = TRUE, width = "1000%") %>%
-            hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
-            hot_cols(columnSorting = TRUE, fixedColumnsLeft=1) %>%
+          rhandsontable::rhandsontable(MySpeciesTraits, colHeaders = c("Nom", "Code_espece", "D.M.E", "D.M.A", "Taux_de_prelevement", "Coefficient_de_recolement", "Tarif_de_cubage", "densite"), selectCallback = TRUE, useTypes = TRUE, width = "100%") %>%
+            hot_cols(columnSorting = TRUE, colWidths= c(150, 100, 75, 75, 150, 175, 200, 100), manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+            #hot_cols(columnSorting = TRUE, fixedColumnsLeft=1) %>%
             hot_col(col = "Nom", type = "autocomplete", source =MySpeciesTraits$Nom)
         })
       }
       Vector_damage = ParamSim$vector_damage
       if(!is.null(Vector_damage)){
         output$vector_damage <-rhandsontable::renderRHandsontable({
-          rhandsontable::rhandsontable(Vector_damage, colHeaders = c("[9, 20[","[20, 30[","[30, 45[","[45, 60[","[60, 80[","[80, 100[","[100, 120[","[120, +∞["), selectCallback = TRUE, useTypes = TRUE, width = "1000px") %>%
+          source("ParamInferenceMBaiki.R",local = T)
+          StrEval2="ColHeaders = c("
+          StrEval3="colWidths = c("
+          for(iter in 1:(length(ClassesDiam)-1)){
+            StrEval2 = paste0(StrEval2, '"[', ClassesDiam[iter],', ', ClassesDiam[iter+1], '[", ')
+            StrEval3 = paste0(StrEval3, '125, ')
+          }
+          StrEval2 = paste0(StrEval2, '"[', ClassesDiam[length(ClassesDiam)],', Inf[")')
+          eval(parse(text = StrEval2))
+          StrEval3 = paste0(StrEval3, '125)')
+          eval(parse(text = StrEval3))
+          rhandsontable::rhandsontable(Vector_damage, colHeaders = ColHeaders, selectCallback = TRUE, useTypes = TRUE, width = "100%") %>%
             hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
-            hot_cols(columnSorting = TRUE, fixedColumnsLeft=1) 
+            hot_cols(columnSorting = TRUE, colWidths= colWidths, manualColumnResize=TRUE, fixedColumnsLeft=1) 
         })
       }
       updateNumericInput(session,"anneedebutSim", value=ParamSim$StartingDate)
       updateNumericInput(session,"anneefirstlogging", value=ParamSim$StartingLogging)
+      updateTextInput(session,"dureesimulation", value=ParamSim$Fin.simu)
       updateNumericInput(session,"dureerotation", value=ParamSim$rotation)
       updateNumericInput(session,"nombrerotation", value=ParamSim$Nb.rotation)
       updateNumericInput(session,"nbchain", value=ParamSim$nbchain)
       updateNumericInput(session,"firstyearcompare", value=ParamSim$Date1PostLog.Check)
       updateCheckboxInput(session,"Allparcelle", value=ParamSim$Check.Allparcelle)
       updateCheckboxInput(session,"check", value=ParamSim$Check)
+      updateTextInput(session, "tarifgenerique", value = ParamSim$Tarifgenerique)
       if(!ParamSim$Check.Allparcelle){
         updateSelectizeInput(session, "parcelle", choices = choicesParcelles, selected = ParamSim$Starting.plot, server = TRUE)
       }
@@ -380,7 +421,7 @@ shinyServer(function(input, output, session){
       if(!error_add_ind){
         listeIndicateur = append(listeIndicateur, listeIndicateurTmp)
         load("data/ResultTestMB.RData")
-        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki",alpha=alphaInd, OtherIndicator = listeIndicateur)
+        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki", SpeciesTraits =ResultTestMB$SpeciesTraits ,alpha=alphaInd, OtherIndicator = listeIndicateur)
         save(ResultTestMB,file="data/ResultTestMB.RData")
         save(listeIndicateur,file="data/FileIndicateur.RData")
         updateSelectIndicator()
@@ -429,7 +470,8 @@ shinyServer(function(input, output, session){
         
         listeIndicateur[[numInd]] = indicateur
         load("data/ResultTestMB.RData")
-        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R",alpha=alphaInd, OtherIndicator = listeIndicateur)
+        browser()
+        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R", SpeciesTraits =ResultTestMB$SpeciesTraits, alpha=alphaInd, OtherIndicator = listeIndicateur)
         save(ResultTestMB,file="data/ResultTestMB.RData")
         save(listeIndicateur,file="data/FileIndicateur.RData")
         loadUpdatedIndicator()
@@ -475,7 +517,7 @@ shinyServer(function(input, output, session){
         numInd = i-1
         listeIndicateur = listeIndicateur[-numInd]
         load("data/ResultTestMB.RData")
-        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R",alpha=alphaInd, OtherIndicator = listeIndicateur)
+        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R",SpeciesTraits =ResultTestMB$SpeciesTraits, alpha=alphaInd, OtherIndicator = listeIndicateur)
         save(ResultTestMB,file="data/ResultTestMB.RData")
         save(listeIndicateur,file="data/FileIndicateur.RData")
         loadUpdatedIndicator()
@@ -500,13 +542,16 @@ shinyServer(function(input, output, session){
   load("data/DataMBaikiFCM.RData")
   MBaikiSpeciesTraits = MBaikiFormatted$TraitData
   output$data_logging <-rhandsontable::renderRHandsontable({
-    data_log = data.frame(nomEspece=MBaikiSpeciesTraits$Id.sp, codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep("", length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
+    if("Name.sp" %in% names(MBaikiSpeciesTraits)) nomEspece = MBaikiSpeciesTraits$Name.sp
+    else nomEspece = MBaikiSpeciesTraits$Id.sp
+    data_log = data.frame(nomEspece=nomEspece, codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep(NA, length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
     data_log$dma = as.character(data_log$dma)
     data_log$tauxPrelevement = as.character(data_log$tauxPrelevement)
     data_log$coefRecollement = as.character(data_log$coefRecollement)
-    rhandsontable::rhandsontable(data_log, colHeaders = c("Nom", "Code_espece", "D.M.E", "D.M.A", "Taux_de_prelevement", "Coefficient_de_recolement", "Tarif_de_cubage", "densite"), selectCallback = TRUE, useTypes = TRUE, width = "1000%") %>%
-      hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
-      hot_cols(columnSorting = TRUE, fixedColumnsLeft=1) %>%
+    data_log$tarifcubage = as.character(data_log$tarifcubage)
+    rhandsontable::rhandsontable(data_log, colHeaders = c("Nom", "Code_espece", "D.M.E", "D.M.A", "Taux_de_prelevement", "Coefficient_de_recolement", "Tarif_de_cubage", "densite"), selectCallback = TRUE, useTypes = TRUE, width = "100%") %>%
+      hot_table(highlightCol = TRUE, highlightRow = TRUE)%>% 
+      hot_cols(columnSorting = TRUE, colWidths= c(150, 100, 75, 75, 150, 175, 200, 100), manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
       # hot_validate_numeric(col = "D.M.E", allowInvalid=FALSE)%>%
       hot_col(col = "Nom", type = "autocomplete", source =data_log$nomEspece)
     #print(data_log$nomEspece)
@@ -516,17 +561,21 @@ output$vector_damage <-rhandsontable::renderRHandsontable({
   source("ParamInferenceMBaiki.R",local = T)
   StrEval1= "data_log = data.frame("
   StrEval2="ColHeaders = c("
+  StrEval3="colWidths = c("
   for(iter in 1:(length(ClassesDiam)-1)){
     StrEval1 = paste0(StrEval1, 'classe', iter,'=c("NA"), ')
     StrEval2 = paste0(StrEval2, '"[', ClassesDiam[iter],', ', ClassesDiam[iter+1], '[", ')
+    StrEval3 = paste0(StrEval3, '125, ')
   }
   StrEval1 = paste0(StrEval1, 'classe', length(ClassesDiam),'=c("NA"), stringsAsFactors = FALSE)')
   eval(parse(text = StrEval1))
   StrEval2 = paste0(StrEval2, '"[', ClassesDiam[length(ClassesDiam)],', Inf[")')
   eval(parse(text = StrEval2))
+  StrEval3 = paste0(StrEval3, '125)')
+  eval(parse(text = StrEval3))
   rhandsontable::rhandsontable(data_log, colHeaders = ColHeaders, selectCallback = TRUE, useTypes = TRUE, width = "1000px") %>%
     hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
-    hot_cols(columnSorting = TRUE, fixedColumnsLeft=1) 
+    hot_cols(columnSorting = TRUE, colWidths= colWidths, manualColumnResize=TRUE, fixedColumnsLeft=1) 
 })
 
 observeEvent(input$plot_SCD,{

@@ -140,7 +140,7 @@ GrowthGLM <- function(DataFormatted,ParamFiles,criterion="BIC"){
   
   
   SimGrowth=list()
-  SimGrowth$CDSTB=ClasseDiamSTAGB(ClassesDiam,alpha=DataFormatted$alpha)
+  #SimGrowth$CDSTB=ClasseDiamSTAGB(ClassesDiam,alpha=DataFormatted$alpha)
   
   
   # Formatting Data                     

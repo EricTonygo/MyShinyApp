@@ -14,6 +14,7 @@ FCM <-function(out.InferFCM=NULL, ParamSim = NULL){
   MySpeciesTraits = ParamSim$MySpeciesTraits
   Logging = ParamSim$Logging
   Date1PostLog.Check = ParamSim$Date1PostLog.Check
+  Fin.simu = ParamSim$Fin.simu
   
   #source(ParamSimFile,local=T)
   NbPlot=length(Starting.plot)
@@ -78,6 +79,7 @@ FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.Infe
   DelayLogging = ParamSim$DelayLogging
   nbchain = ParamSim$nbchain
   vector_damage = ParamSim$vector_damage
+  Fin.simu = ParamSim$Fin.simu
   # List  of species 
   ListeIdsp=colnames(Effectifs)
   NbIdVern=length(ListeIdsp)
@@ -96,7 +98,7 @@ FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.Infe
   
   Exploitations=(0:Nb.rotation)*rotation+DelayLogging
   
-  Fin.simu=Exploitations[length(Exploitations)]
+  #Fin.simu=Exploitations[length(Exploitations)]
   
   Exploitations=Exploitations[-length(Exploitations)]
   
@@ -256,8 +258,9 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   if (is.null(Verif)) Verif=out.FCM$Check
   StartingDate=out.FCM$StartingDate
   Simulations=data.table(out.FCM$Simulations,key="Id.sp")
-  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB,key="ClassesDiam")
-  NbClasse=nrow(DataOutputs)
+  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB)
+  setkeyv(DataOutputs, c("Id.sp", "ClassesDiam"))
+  NbClasse=length(levels(DataOutputs$ClassesDiam))
   DataTraits=data.table(out.FCM$SpeciesTraits,key="Id.sp")
   DataTraits$Id.sp=as.factor(DataTraits$Id.sp)
   Lab.period=out.FCM$ParamPlot$Lab.period
@@ -272,7 +275,7 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   
   #browser()
   Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
-  Simulations=merge(Simulations,DataOutputs,by="ClassesDiam",all.x=T,all.y=F)
+  Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=T,all.y=F)
   
   
   Simulations[,Efft:=Eff*Effectifs]
@@ -290,7 +293,7 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   if (Verif){
     DataVerif=data.table(out.FCM$DataVerif,key="Id.sp")
     DataVerif=merge(DataVerif,DataTraits,by="Id.sp",all.x=T,all.y=F)
-    DataVerif=merge(DataVerif,DataOutputs,by="ClassesDiam",all.x=T,all.y=F)
+    DataVerif=merge(DataVerif,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=T,all.y=F)
     DataVerif[,Efft:=Eff*Effectifs]
     DataVerif[,Temps:=as.numeric(as.character(DataVerif$Id.campagne))]
   }
@@ -365,8 +368,9 @@ GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
   if (is.null(Verif)) Verif=out.FCM$Check
   StartingDate=out.FCM$StartingDate
   Simulations=data.table(out.FCM$Simulations,key="Id.sp")
-  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB,key="ClassesDiam")
-  NbClasse=nrow(DataOutputs)
+  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB)
+  setkeyv(DataOutputs, c("Id.sp", "ClassesDiam"))
+  NbClasse=length(levels(DataOutputs$ClassesDiam))
   DataTraits=data.table(out.FCM$SpeciesTraits,key="Id.sp")
   DataTraits$Id.sp=as.factor(DataTraits$Id.sp)
   Lab.period=out.FCM$ParamPlot$Lab.period
@@ -381,7 +385,7 @@ GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
   
   #browser()
   Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
-  Simulations=merge(Simulations,DataOutputs,by="ClassesDiam",all.x=T,all.y=F)
+  Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=T,all.y=F)
 
   
   Simulations[,Efft:=Eff*Effectifs] 

@@ -74,9 +74,15 @@ body <- dashboardBody(
                           tabPanel(h5(strong("Paramètres de l'exploitation")),
                                    #rhandsontable pour les données d'exploitation
                                    fluidRow(
+                                     column(width= 12,
+                                            textInput("tarifgenerique", "Tarif de cubage générique (en fonction du diamètre d)", value="", placeholder = "Exemple : 10^(-2.96+1.93*log10(d))"),
+                                            tags$style(type='text/css', "#tarifgenerique { display: inline-block !important;}")
+                                            
+                                     )),
+                                   fluidRow(
                                      box(
                                        h5(strong("Tableau des espèces à exploiter")),width = "100%",
-                                       rHandsontableOutput("data_logging", height = "300px")
+                                       rHandsontableOutput("data_logging", height = "500px")
                                      )
                                      
                                    ),
@@ -107,15 +113,16 @@ body <- dashboardBody(
                                             conditionalPanel(
                                               condition  = "input.Allparcelle == false",
                                               selectizeInput(
-                                                'parcelle', label = "Parcelle à simuler", multiple= TRUE, choices = c(221, 222, 223,224, 225),
+                                                'parcelle', label = "Parcelle à simuler", multiple= TRUE, choices = NULL,
                                                 options = list(create = FALSE)
                                               )
                                             ),
-                                            numericInput("nombrerotation", "Nombre de rotation", value=2, min = 0, max = Inf, step = NA)
+                                            numericInput("dureesimulation", "Durée de la simulation", value=20, min = 0, max = Inf, step = NA)
                                      ),
                                      column(width= 6,
-                                            numericInput("dureerotation", "Durée d\'une rotation", value=30, min = 0, max = Inf, step = NA),
-                                            numericInput("nbchain", "Nombre de simulation", value=100, min = 0, max = Inf, step = NA),
+                                            numericInput("nbchain", "Nombre de simulation", value=50, min = 0, max = Inf, step = NA),
+                                            numericInput("nombrerotation", "Nombre de rotation", value=2, min = 0, max = Inf, step = NA),
+                                            numericInput("dureerotation", "Durée d\'une rotation", value=5, min = 0, max = Inf, step = NA),
                                             checkboxInput("check", "Validation avec les vraies données", TRUE),
                                             conditionalPanel(
                                               condition  = "input.check == true",
