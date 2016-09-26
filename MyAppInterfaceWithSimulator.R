@@ -35,21 +35,21 @@ FCM <-function(out.InferFCM=NULL, ParamSim = NULL){
       Check=F
       Data$StartingDate=0
     }else{ 
-      #browser()
+      
       ParamStartData=list(StartingDate = StartingDate, Check = Check)
-      #browser()
+      
       
       if (Check){
         ParamStartData$Date1PostLog.Check=Date1PostLog.Check
-        #browser()
+        
       } 
-      #browser()
+      
       Data=StartData(out.InferFCM$SimulatingData,Starting.plot[j],out.InferFCM$ClassesDiam,ParamStartData)
       
     }       
     #InferFCM$SpeciesTraits= MySpeciesTraits
     #param = list(Nb.rotation = Nb.rotation, rotation = rotation, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = vector_damage)
-    #browser()
+    
     outTmp=FCMplot(ParamSim, Data$DataStart,Data$Data1YearPost,MySpeciesTraits,out.InferFCM,c(Starting.plot[j]),Logging,Check,out.InferFCM$ParamPlot$Surface)
     Simulations=rbind(Simulations,outTmp)
     DataVerif=rbind(DataVerif,Data$DataVerif)
@@ -73,7 +73,7 @@ FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.Infe
   
   # Load logging parameters
   #source(ParamSimFile,local=T)  
-  #browser()
+  
   Nb.rotation = ParamSim$Nb.rotation
   rotation = ParamSim$rotation
   DelayLogging = ParamSim$DelayLogging
@@ -84,7 +84,7 @@ FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.Infe
   ListeIdsp=colnames(Effectifs)
   NbIdVern=length(ListeIdsp)
   ListeIdspLogging=SpeciesTraits$Id.sp
-  #browser()
+  
   
   # Stand structure variables
   ClassesDiam=out.InferFCM$ClassesDiam
@@ -154,7 +154,7 @@ FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.Infe
   RecruitmentModel=SimRecrut$Func
   MortalityModel=SimMort$Func
   GrowthModel=SimGrowth$Func
-  #browser()
+  
   
   # boucles des simulation
   for (k in 1:nbchain){
@@ -267,13 +267,13 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   Nb.period=out.FCM$ParamPlot$Nb.period
   Surface=out.FCM$ParamPlot$Surface
   
-  #browser()
+  
   
   # rescaling parameters at 1ha
   
   DataOutputs[,Eff:=Eff/Surface]
   
-  #browser()
+  
   Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
   Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=T,all.y=F)
   
@@ -337,7 +337,7 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
     }
     
   }
-  #browser()
+  
   Myggplot <- Myggplot + xlab(Lab.period)
   Myggplot <- Myggplot + ylab("Proportion of trees by diameter class")
   Myggplot <- Myggplot + ylim(ORD)
@@ -377,13 +377,13 @@ GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
   Nb.period=out.FCM$ParamPlot$Nb.period
   Surface=out.FCM$ParamPlot$Surface
   
-  #browser()
+  
   
   # rescaling parameters at 1ha
   
   DataOutputs[,Eff:=Eff/Surface]
   
-  #browser()
+  
   Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
   Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=T,all.y=F)
 
@@ -413,7 +413,6 @@ GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
     SimulationTmp=subset(Simulations,Id.sp%in%Groups[[g]])
     
     Indicateurs=SimulationTmp[,list(Effs=sum(Efft)),by="Id.zone,iter,Temps"]
-    #Indicateurs=Indicateurs[order(Indicateurs$Temps),]
     
     
     # Structure diamétriques
@@ -424,8 +423,6 @@ GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
     for (cd in 1:NbClasse){
       IndicateursCDTmp=subset(IndicateursCD,ClasseDiam==levels(IndicateursCD$ClasseDiam)[cd])
       IndicateursCDTmp=IndicateursCDTmp[,list(liEffs=quantile(Effs,0.025, na.rm = TRUE), medEffs=median(Effs), lsEffs=quantile(Effs,0.975, na.rm = TRUE)),by="Temps"]
-      #IndicateursCDTmp=IndicateursCDTmp[order(IndicateursCDTmp$Temps),]
-      #IndexTemps=Temps%in%IndicateursCDTmp$Temps
       tabEffs[cd,]=rep(0, 3)
       if(length(IndicateursCDTmp$medEffs)==0){
         tabEffs[cd,1]=tabEffs[cd,1]

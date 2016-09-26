@@ -35,7 +35,8 @@ body <- dashboardBody(
                   imageOutput("imageDynaffor")
               ),
               div(id="objectif_logiciel",
-                  h3(strong("OUTIL D'AIDE A LA GESTION DURABLE DES EXPLOITATIONS FORESTIERES"))  
+                  #h3(strong("OUTIL D'AIDE A LA GESTION DURABLE DES EXPLOITATIONS FORESTIERES"))
+                  h3(strong("OUTIL DE SIMULATION DE LA DYNAMIQUE FORESTIERE"))
               ),
               tags$style(type='text/css', "#image_dynaffor { text-align: center} #objectif_logiciel { text-align: center}")
               
@@ -465,7 +466,7 @@ body <- dashboardBody(
                              
                       )
                     ),
-                    shinyjs::hidden(div(id ='boxloader_add_ID', width ="100px",
+                    shinyjs::hidden(div(id ='boxloader_add_IND', width ="100px",
                             div(id="img_loader_add_IND", img(src= "trait_loader.gif", width= "100px")),
                             tags$style(type='text/css', "#img_loader_add_IND { text-align: center;}"),
                             div(id="load_add_IND_encours", strong("Enregistrement en cours ...")),

@@ -22,11 +22,20 @@ shinyServer(function(input, output, session){
   session$onSessionEnded(function() {
     stopApp()
   })
-  volumes <- getVolumes()
+  #volumes <- getVolumes()
+  ##################################################################################################################################
+  #initialisation du dossier par defaut dans lequel se feront la sauvegarde et le chargement des paramètrages des simulations
+  #contenant des scéarios d'exploitation forestière et les autres parmètres de la simulation
+  #Puis initialisation des fonctions de sauvegarde et chargement des fichiers au format .RData
+  ##################################################################################################################################
   roots = c(wd="./ParametresSimulation")
   shinyFileSave(input, 'save_config', session=session, roots=roots, restrictions = system.file(package = "base"))
   shinyFileChoose(input, 'load_config', session=session,
                   roots=roots, filetypes=c('', 'RData'))
+  
+  ##################################################################################################################################
+  #Initialisation des variables globales dont nous aurons besoin au cours de l'excécution du programme
+  ##################################################################################################################################
   assign("DataToExport", data.table(),envir = .GlobalEnv)
   assign("PlotToExport", ggplot(), envir = .GlobalEnv)
   assign("PlotSTToExport", ggplot(), envir = .GlobalEnv)
@@ -34,6 +43,14 @@ shinyServer(function(input, output, session){
   assign("alphaInd", NULL, envir = .GlobalEnv)
   assign("choicesParcelles", NULL, envir = .GlobalEnv)
   assign("hidable", FALSE, envir = .GlobalEnv)
+  
+  
+  ##################################################################################################################################
+  #updateSelectIndicator c'est la fonction permettant la mise à jour de la liste de selection des indicateurs
+  #sur l'interface graphique lorsque qu'on ajoute, modifie, supprime un indicateur.
+  #
+  #loadUpdatedIndicator la fonction permettant de charger les indicateurs au lancement de la l'application
+  ##################################################################################################################################
   updateSelectIndicator <-function(){
     vectorIndicator = c()
     for(i in 1:length(ListOfIndicators)){
@@ -45,34 +62,52 @@ shinyServer(function(input, output, session){
   }
   
   loadUpdatedIndicator<-function(){
-    load("data/FileIndicateur.RData")
-    listeIndicateurTmp = listeIndicateur 
-    vectorIndicator = c()
-    for(i in 1:length(listeIndicateurTmp)){
-      indicator= listeIndicateurTmp[[i]]
-      vectorIndicator = c(vectorIndicator, indicator$NomInd)
-    }
-    updateSelectInput(session, "nom_indicateur_update", label = "indicateur", choices = vectorIndicator,
-                      selected = NULL)
-    rm(listeIndicateur)
+    tryCatch({
+      load("data/FileIndicateur.RData")
+      listeIndicateurTmp = listeIndicateur 
+      vectorIndicator = c()
+      for(i in 1:length(listeIndicateurTmp)){
+        indicator= listeIndicateurTmp[[i]]
+        vectorIndicator = c(vectorIndicator, indicator$NomInd)
+      }
+      updateSelectInput(session, "nom_indicateur_update", label = "indicateur", choices = vectorIndicator,
+                        selected = NULL)
+      rm(listeIndicateur)
+    },error=function(e){
+      
+    })
   }
   
+  
+  ##################################################################################################################################
+  #Fonction associée à l'évènement de sélection du nom d'un indicateur dans la liste des indicateurs modifiable
+  ##################################################################################################################################
   observeEvent(input$nom_indicateur_update, {
-    load("data/FileIndicateur.RData")
-    error_add_ind = FALSE
-    i=1
-    indicateur= list()
-    while(!error_add_ind && i<=length(listeIndicateur)){
-      indicateur= listeIndicateur[[i]]
-      if(indicateur$NomInd== input$nom_indicateur_update ){
-        error_add_ind=TRUE
+    tryCatch({
+      load("data/FileIndicateur.RData")
+      error_add_ind = FALSE
+      i=1
+      indicateur= list()
+      while(!error_add_ind && i<=length(listeIndicateur)){
+        indicateur= listeIndicateur[[i]]
+        if(indicateur$NomInd== input$nom_indicateur_update ){
+          error_add_ind=TRUE
+        }
+        i=i+1
       }
-      i=i+1
-    }
-    updateAceEditor(session, "fonction_indicateur_update", indicateur$Func,
-                    mode="r", theme="chrome",autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
+      #Mise à jour du textarea contenant la formule mathématique de l'indicateur necessaire pour son extraction
+      updateAceEditor(session, "fonction_indicateur_update", indicateur$Func,
+                      mode="r", theme="chrome",autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
+    },error=function(e){
+      
+    })
+    
   })
   
+  ##################################################################################################################################
+  #Fonction associée à l'évènement permettant de rentrer vers l'interface de definition des paramètres de la simulation après une 
+  #simulation réussie ou un échec survenu aucours de la simulation.
+  ##################################################################################################################################
   observeEvent(input$gotoparameters, {
     #createAlert(session, "alert", "exampleAlert", style = "success",content = "Echec de la simulation.", append = FALSE)
     shinyjs::hide('boxloader')
@@ -93,6 +128,9 @@ shinyServer(function(input, output, session){
     #hidable = FALSE
     simulation.input <- reactive({
       Date1PostLog.Check = 0
+      ##################################################################################################################################
+      #Validation des inputs saisis par l'utilisateur.
+      ##################################################################################################################################
       validate(
         need(input$anneedebutSim != "", "Vueillez entrer la date de debut de la simulation"),
         need(input$anneefirstlogging !="", "Veuillez entrer la date de la première exploitation"),
@@ -110,6 +148,9 @@ shinyServer(function(input, output, session){
         need(((as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim))+ as.numeric(input$nombrerotation)*as.numeric(input$dureerotation)) <= as.numeric(input$dureesimulation), paste0("La durée de la simulation doit être supérieure à ",((as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim))+ as.numeric(input$nombrerotation)*as.numeric(input$dureerotation))))
         
       )
+      ##################################################################################################################################
+      #Recuperation des paramètres saisis par l'utilisateur
+      ##################################################################################################################################
       tarifgenerique = input$tarifgenerique
       if(tarifgenerique ==""){
         tarifgenerique = "10^(-2.96+1.93*log10(d))"
@@ -130,7 +171,7 @@ shinyServer(function(input, output, session){
         DF$Coefficient_de_recolement = DF$Coefficient_de_recolement/100
         DF$Tarif_de_cubage[DF$Tarif_de_cubage=="NA" | DF$Tarif_de_cubage==""]= tarifgenerique
         SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=DF$D.M.A, tauxPrelevement= DF$Taux_de_prelevement, coefRecollement = DF$Coefficient_de_recolement, tarifs = DF$Tarif_de_cubage, TarifGenerique = tarifgenerique) 
-        #browser()
+        
         if(!error_sim && nrow(subset(SpeciesTraits, SpeciesTraits$DMA<SpeciesTraits$DME))!=0){
           error_sim= TRUE
           error_sim_msg= "Il y a des espèces ayant un DMA inférieur au DME. Veuillez corriger ces informations."
@@ -154,12 +195,12 @@ shinyServer(function(input, output, session){
         VD  <-  hot_to_r(input$vector_damage)
         VD_SAVE <- VD
         VD[VD=="NA" | VD==""]=0
-        #browser()
+        
         v=c()
         for (i in 1:ncol(VD)){
           v = c(v,as.numeric(VD[[i]][1]))
         }
-        #browser()
+        
         if(length(v[which(v<0|v>100)])!=0){
           error_sim= TRUE
           error_sim_msg= "Le dommage en (%) doit être compris entre 0 et 100. Veuillez corriger ces informations"
@@ -197,9 +238,13 @@ shinyServer(function(input, output, session){
         if(is.na(Check) || !is.logical(Check)) Check = FALSE
         MySpeciesTraits = SpeciesTraits
         vector_damage = v/100
-        #browser()
+        
         Logging="T2.MBaiki"
         load("data/FileIndicateur.RData")
+        ##################################################################################################################################
+        #Calcul des paramètres du modèle en utilisant les données réelles collectées sur les arbres et 
+        #contenu dans le paramètre MBaikiFormatted
+        ##################################################################################################################################
         test=InferFCM(MBaikiFormatted,"ParamInferenceMBaiki.R", SpeciesTraits = MySpeciesTraits, listeIndicateur= listeIndicateur)
         save(test,file="data/out-inferFCM.RData")
         tryCatch({
@@ -207,8 +252,15 @@ shinyServer(function(input, output, session){
         })
         load("data/out-inferFCM.RData")
         ParamSim = list(Nb.rotation = Nb.rotation, rotation = rotation, Fin.simu = Fin.simu, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = vector_damage, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = MySpeciesTraits, Logging = Logging, Tarifgenerique = tarifgenerique)
+        ##################################################################################################################################
+        #Simulation proprement dite
+        ##################################################################################################################################
         ResultTestMB= FCM(out.InferFCM=test, ParamSim)
         #load("data/ResultTestMB.RData")
+        ##################################################################################################################################
+        #Sauvegarde des resultats de la simulation dans le fichier "data/ResultTestMB.RData" et d'autres paramètres
+        #utilisable ultérieurement.
+        ##################################################################################################################################
         Nb.period=ResultTestMB$ParamPlot$Nb.period
         max_Temps = max(ResultTestMB$Simulations$Temps)+StartingDate
         StoreTime= c(StartingDate:max_Temps);
@@ -349,7 +401,7 @@ shinyServer(function(input, output, session){
       if(!is.null(MySpeciesTraits)){
         output$data_logging <-rhandsontable::renderRHandsontable({
           rhandsontable::rhandsontable(MySpeciesTraits, colHeaders = c("Nom", "Code_espece", "D.M.E", "D.M.A", "Taux_de_prelevement", "Coefficient_de_recolement", "Tarif_de_cubage", "densite"), selectCallback = TRUE, useTypes = TRUE, width = "100%") %>%
-            hot_cols(columnSorting = TRUE, colWidths= c(150, 100, 75, 75, 150, 175, 200, 100), manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+            hot_cols(columnSorting = TRUE, colWidths= c(150, 100, 75, 75, 150, 175, 200, 75), manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
             #hot_cols(columnSorting = TRUE, fixedColumnsLeft=1) %>%
             hot_col(col = "Nom", type = "autocomplete", source =MySpeciesTraits$Nom)
         })
@@ -395,15 +447,23 @@ shinyServer(function(input, output, session){
   
   ############ Ajout d'un indicateur #########################
   observeEvent(input$Ajout_indicateur,{
-    shinyjs::hide('action_add_IND')
-    shinyjs::show('boxloader_add_IND')
+
     tryCatch({
-      load("data/FileIndicateur.RData")
-    },error=function(e){
-      listeIndicateur= list()
-    })
-    
-    tryCatch({
+      
+      validate(
+        need(input$nom_indicateur_new != "", "Vueillez entrer le nom de l'indicateur"),
+        need(input$fonction_indicateur_new !="", "Veuillez entrer la formulation mathématique de l'indicateur")
+      )
+      
+      shinyjs::hide('action_add_IND')
+      shinyjs::show('boxloader_add_IND')
+      
+      tryCatch({
+        load("data/FileIndicateur.RData")
+      },error=function(e){
+        listeIndicateur= list()
+      })
+      
       error_add_ind=FALSE
       numInd = length(listeIndicateur)
       if(numInd !=0){
@@ -436,21 +496,28 @@ shinyServer(function(input, output, session){
     },error=function(e){
       shinyjs::hide('boxloader_add_IND')
       shinyjs::show('action_add_IND')
-      shinyjs::info("Une erreur s'est produite au niveau du serveur")
+      #shinyjs::info("Une erreur s'est produite au niveau du serveur")
+      shinyjs::info(e)
     })
   })
   #########################Modification des indicateurs####################################
   observeEvent(input$update_indicateur,{
-    shinyjs::hide('action_update_delete_IND')
-    shinyjs::show('boxloader_update_IND')
-    tryCatch({
-      
-      load("data/FileIndicateur.RData")
-    },error=function(e){
-      listeIndicateur= list()
-    })
+    
     
     tryCatch({
+      validate(
+        need(input$nom_indicateur_update != "", "Vueillez selectionner un indicateur"),
+        need(input$fonction_indicateur_update !="", "Veuillez entrer la formulation mathématique de l'indicateur")
+      )
+      
+      shinyjs::hide('action_update_delete_IND')
+      shinyjs::show('boxloader_update_IND')
+      tryCatch({
+        load("data/FileIndicateur.RData")
+      },error=function(e){
+        listeIndicateur= list()
+      })
+      
       trouve=FALSE
       indicateur=list()
       nbreInd = length(listeIndicateur)
@@ -470,7 +537,7 @@ shinyServer(function(input, output, session){
         
         listeIndicateur[[numInd]] = indicateur
         load("data/ResultTestMB.RData")
-        browser()
+        
         ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R", SpeciesTraits =ResultTestMB$SpeciesTraits, alpha=alphaInd, OtherIndicator = listeIndicateur)
         save(ResultTestMB,file="data/ResultTestMB.RData")
         save(listeIndicateur,file="data/FileIndicateur.RData")
@@ -624,11 +691,9 @@ observeEvent(input$plot_SCD,{
       output$plot_strDia <- renderPlot({
         print(p)
       })
-      shinyjs::show('bloc_export_sd_rg')
       DataToExportSCD = DataToExportTmp
       PlotToExportSCD = p
       output$data_strDia <- DT::renderDataTable(DataToExportSCD)
-      shinyjs::show('bloc_export_sd_data')
       save(DataToExportSCD, file = "data/DataExportSCD.RData")
       save(PlotToExportSCD, file = "data/PlotToExportSCD.RData")
       rm(ResultTestMB)

@@ -117,11 +117,13 @@ Pour le faire il suffit de cliquer sur le menu « __Simulation__ » et de select
 ![Page de paramètres de l'exploitation](images/param_exploitation.png "interface de l'exploitation")
 
 La réalisation d'un scénario de d'exploitation forestière se fait à travers l'indication de certains paramètres liés à l'exploitation d'une forêt tel que: 
+* le tarif de cubage génerique qui sera utilisé pour les espèces qui n'auront pas de tarif de cubage spécifique
 * la liste des espèces exploitées, 
 * leur D.M.E (fixé par l'administration forestière du pays), 
-* leur D.M.A (D.M.A > D.M.E), 
+* leur D.M.A (D.M.A >= D.M.E), 
 * leur taux de prélèvement (en pourcentage Exemple: 50.45), 
-* leur taux de recollement (en pourcentage Exemple: 50.45),
+* leur taux de recollement (en pourcentage Exemple: 70.25),
+* leur tarif de cubage spécifique pour le calcul du volume exploitable de l'espèce correspondante,
 * leur densité.
 
 Tous ces paramètres ont été regroupés à l'intérieur d'un tableau dans lequel les colonnes représente les valeurs de ces paramètres et les lignes les espèces disponibles dans la forêt. Lorsqu'une espèce est exploitée aucours d'un scénario d'exploitation forestière il suffit juste de remplir les valeurs des paramètres cités ci-dessus pour cette espèce en remplissant la ligne correspondante à l'espèce et la colonne correspondante au paramètre.    
@@ -185,7 +187,7 @@ Une fois le bouton __Lancer la simulation__ est appuyé, un test de conformité 
 
 Elle se matérilise par l'apparition de l'icône vert du succès et le message vous indiquant que la simulation s'est terminée avec succès comme l'indique la figure ci-dessous.
 
-![Page de la fin de la simulation](images/interface_launch_sim.png "interface de la fin de la simulation")
+![Page de la fin de la simulation](images/interface_success_sim.png "interface de la fin de la simulation")
 
 ```{r pressure, echo=FALSE}
 

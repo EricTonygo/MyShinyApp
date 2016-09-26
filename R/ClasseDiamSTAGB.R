@@ -55,12 +55,12 @@ Id.sp = SpeciesTraits$Id.sp
 Nb_Id.sp = length(Id.sp)
 tarifsCubage= SpeciesTraits$tarifs
 ClasseDiamDME = findInterval(SpeciesTraits$DME[1], ClassesDiam)
-#browser()
+
 for (j in 1: Nb_Id.sp) {
   ExpEVal = paste0("FunctionTarif= function(d){
     return(", tarifsCubage[j] ,") }")
   eval(parse(text = ExpEVal))
-  #browser()
+  
   for (i in 1:NbClasse){
     Col_Id.sp = c(Col_Id.sp, Id.sp[j])
     Col_ClasseDiam = c(Col_ClasseDiam, i)
@@ -104,7 +104,7 @@ if(is.list(OtherIndicator)){
   }
 }
 ExpReturn=paste0(ExpReturn, ")", collapse = '')
-#browser()
+
 eval(parse(text = ExpReturn))
 return(DataOutputs)
 }

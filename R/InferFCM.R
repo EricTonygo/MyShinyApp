@@ -2,7 +2,7 @@ InferFCM<- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NUL
 source(ParamFiles, local = T)
 ParamPlot=list(Lab.period=Lab.period,Nb.period=Nb.period,Surface=Surface)
 ParamPlot$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles, SpeciesTraits= SpeciesTraits, alpha=DataFormatted$alpha, OtherIndicator = listeIndicateur)
-#browser()
+
 # loading of the functions of the dynamics models
 expr=paste0('R/',Models$Recruitment,".R")
 source(expr)
