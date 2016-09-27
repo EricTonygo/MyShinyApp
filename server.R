@@ -170,7 +170,7 @@ shinyServer(function(input, output, session){
         DF$Taux_de_prelevement = DF$Taux_de_prelevement/100
         DF$Coefficient_de_recolement = DF$Coefficient_de_recolement/100
         DF$Tarif_de_cubage[DF$Tarif_de_cubage=="NA" | DF$Tarif_de_cubage==""]= tarifgenerique
-        SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=DF$D.M.A, tauxPrelevement= DF$Taux_de_prelevement, coefRecollement = DF$Coefficient_de_recolement, tarifs = DF$Tarif_de_cubage, TarifGenerique = tarifgenerique) 
+        SpeciesTraits= data.frame(Id.sp= as.character(DF$Code_espece), WSG = DF$densite, DME= DF$D.M.E, DMA=DF$D.M.A, tauxPrelevement= DF$Taux_de_prelevement, coefRecollement = DF$Coefficient_de_recolement, tarifs = DF$Tarif_de_cubage, TarifGenerique = tarifgenerique , stringsAsFactors = FALSE) 
         
         if(!error_sim && nrow(subset(SpeciesTraits, SpeciesTraits$DMA<SpeciesTraits$DME))!=0){
           error_sim= TRUE
@@ -188,7 +188,7 @@ shinyServer(function(input, output, session){
         DF_SAVE <- NULL
         MBaikiSpeciesTraits = MBaikiFormatted$TraitData
         DF <- data.frame(codeEspece= MBaikiSpeciesTraits$Id.sp, dme=MBaikiSpeciesTraits$DME, dma=rep(Inf, length(MBaikiSpeciesTraits$Id.sp)), tauxPrelevement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), coefRecollement=rep(0, length(MBaikiSpeciesTraits$Id.sp)), tarifcubage=rep(tarifgenerique, length(MBaikiSpeciesTraits$Id.sp)), densite=MBaikiSpeciesTraits$WSG)
-        SpeciesTraits= data.frame(Id.sp= DF$codeEspece, WSG = DF$densite, DME= DF$dme, DMA=DF$dma, tauxPrelevement= DF$tauxPrelevement, coefRecollement = DF$coefRecollement)
+        SpeciesTraits= data.frame(Id.sp= as.character(DF$codeEspece), WSG = DF$densite, DME= DF$dme, DMA=DF$dma, tauxPrelevement= DF$tauxPrelevement, coefRecollement = DF$coefRecollement, tarifs = DF$tarifcubage, TarifGenerique = tarifgenerique , stringsAsFactors = FALSE)
         #SpeciesTraits = NULL
       }
       if (!error_sim && !is.null(input$vector_damage)) {
@@ -236,7 +236,7 @@ shinyServer(function(input, output, session){
         Date1PostLog.Check = input$firstyearcompare
         Check = input$check
         if(is.na(Check) || !is.logical(Check)) Check = FALSE
-        MySpeciesTraits = SpeciesTraits
+        #MySpeciesTraits = SpeciesTraits
         vector_damage = v/100
         
         Logging="T2.MBaiki"
@@ -245,13 +245,13 @@ shinyServer(function(input, output, session){
         #Calcul des paramètres du modèle en utilisant les données réelles collectées sur les arbres et 
         #contenu dans le paramètre MBaikiFormatted
         ##################################################################################################################################
-        test=InferFCM(MBaikiFormatted,"ParamInferenceMBaiki.R", SpeciesTraits = MySpeciesTraits, listeIndicateur= listeIndicateur)
+        test=InferFCM(MBaikiFormatted,"ParamInferenceMBaiki.R", SpeciesTraits = SpeciesTraits, listeIndicateur= listeIndicateur)
         save(test,file="data/out-inferFCM.RData")
         tryCatch({
           rm(test)
-        })
+        },error=function(e){})
         load("data/out-inferFCM.RData")
-        ParamSim = list(Nb.rotation = Nb.rotation, rotation = rotation, Fin.simu = Fin.simu, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = vector_damage, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = MySpeciesTraits, Logging = Logging, Tarifgenerique = tarifgenerique)
+        ParamSim = list(Nb.rotation = Nb.rotation, rotation = rotation, Fin.simu = Fin.simu, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = vector_damage, Starting.plot = Starting.plot, StartingDate = StartingDate, nbchain = nbchain, Check = Check, Date1PostLog.Check = Date1PostLog.Check, MySpeciesTraits = SpeciesTraits, Logging = Logging, Tarifgenerique = tarifgenerique)
         ##################################################################################################################################
         #Simulation proprement dite
         ##################################################################################################################################
@@ -480,9 +480,11 @@ shinyServer(function(input, output, session){
       listeIndicateurTmp= list(list(NomInd=input$nom_indicateur_new, NomFunc= paste("nomfunction", numInd, sep = ''), VarInd=paste("varind", numInd, sep = ''), Func=FuncInd ))
       if(!error_add_ind){
         listeIndicateur = append(listeIndicateur, listeIndicateurTmp)
-        load("data/ResultTestMB.RData")
-        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki", SpeciesTraits =ResultTestMB$SpeciesTraits ,alpha=alphaInd, OtherIndicator = listeIndicateur)
-        save(ResultTestMB,file="data/ResultTestMB.RData")
+        if(file.exists("data/ResultTestMB.RData") && file.access(names = "data/ResultTestMB.RData", mode = 4)==0){
+          load("data/ResultTestMB.RData")
+          ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R", SpeciesTraits =ResultTestMB$SpeciesTraits ,alpha=alphaInd, OtherIndicator = listeIndicateur)
+          save(ResultTestMB,file="data/ResultTestMB.RData")
+        }
         save(listeIndicateur,file="data/FileIndicateur.RData")
         updateSelectIndicator()
         shinyjs::hide('boxloader_add_IND')
@@ -512,12 +514,12 @@ shinyServer(function(input, output, session){
       
       shinyjs::hide('action_update_delete_IND')
       shinyjs::show('boxloader_update_IND')
-      tryCatch({
+      #browser()
+      if(file.exists("data/FileIndicateur.RData") && file.access(names = "data/FileIndicateur.RData", mode = 4)==0){
         load("data/FileIndicateur.RData")
-      },error=function(e){
+      }else{
         listeIndicateur= list()
-      })
-      
+      }
       trouve=FALSE
       indicateur=list()
       nbreInd = length(listeIndicateur)
@@ -536,10 +538,11 @@ shinyServer(function(input, output, session){
         indicateur= list(NomInd=input$nom_indicateur_update, NomFunc= paste("nomfunction", numInd, sep = ''), VarInd=paste("varind", numInd, sep = ''), Func=FuncInd )
         
         listeIndicateur[[numInd]] = indicateur
-        load("data/ResultTestMB.RData")
-        
-        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R", SpeciesTraits =ResultTestMB$SpeciesTraits, alpha=alphaInd, OtherIndicator = listeIndicateur)
-        save(ResultTestMB,file="data/ResultTestMB.RData")
+        if(file.exists("data/ResultTestMB.RData") && file.access(names = "data/ResultTestMB.RData", mode = 4)==0){
+          load("data/ResultTestMB.RData")
+          ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R", SpeciesTraits =ResultTestMB$SpeciesTraits ,alpha=alphaInd, OtherIndicator = listeIndicateur)
+          save(ResultTestMB,file="data/ResultTestMB.RData")
+        }
         save(listeIndicateur,file="data/FileIndicateur.RData")
         loadUpdatedIndicator()
         updateSelectIndicator()
@@ -554,7 +557,7 @@ shinyServer(function(input, output, session){
     },error=function(e){
       shinyjs::hide('boxloader_update_IND')
       shinyjs::show('action_update_delete_IND')
-      shinyjs::info("Une erreur s'est produite au niveau du serveur.")
+      shinyjs::info(e)
     })
   })
   #########################delete indicateur####################################
@@ -583,9 +586,11 @@ shinyServer(function(input, output, session){
         }
         numInd = i-1
         listeIndicateur = listeIndicateur[-numInd]
-        load("data/ResultTestMB.RData")
-        ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R",SpeciesTraits =ResultTestMB$SpeciesTraits, alpha=alphaInd, OtherIndicator = listeIndicateur)
-        save(ResultTestMB,file="data/ResultTestMB.RData")
+        if(file.exists("data/ResultTestMB.RData") && file.access(names = "data/ResultTestMB.RData", mode = 4)==0){
+          load("data/ResultTestMB.RData")
+          ResultTestMB$ParamPlot$CDSTB=ClasseDiamSTAGB("ParamInferenceMBaiki.R", SpeciesTraits =ResultTestMB$SpeciesTraits ,alpha=alphaInd, OtherIndicator = listeIndicateur)
+          save(ResultTestMB,file="data/ResultTestMB.RData")
+        }
         save(listeIndicateur,file="data/FileIndicateur.RData")
         loadUpdatedIndicator()
         updateSelectIndicator()
@@ -600,7 +605,7 @@ shinyServer(function(input, output, session){
     },error=function(e){
       shinyjs::hide('boxloader_update_IND')
       shinyjs::show('action_update_delete_IND')
-      shinyjs::info("Une erreur s'est produite au niveau du serveur.")
+      shinyjs::info(e)
     })
   })
   
@@ -657,9 +662,9 @@ observeEvent(input$plot_SCD,{
       shinyjs::show('boxloader_SCD')
       load("data/ResultTestMB.RData")
       if(input$selectGESDAll == FALSE){
-        Groups=list(stand=input$groupe_espece_strDia)
+        Groups=list(stand=as.factor(input$groupe_espece_strDia))
       }else{
-        Groups = list(stand=MBaikiFormatted$TraitData$Id.sp)
+        Groups = list(stand=as.factor(MBaikiFormatted$TraitData$Id.sp))
       }
       p <- ggplot()
       p <- PlotSCD(ResultTestMB, Groups = Groups)
@@ -712,9 +717,9 @@ observeEvent(input$plot_SCD,{
       load("data/lastTimeSimulate.RData")
       StartingDate = StoreTime[1]
       if(input$selectGESDAll == FALSE){
-        Groups=list(stand=input$groupe_espece_strDia)
+        Groups=list(stand=as.factor(input$groupe_espece_strDia))
       }else{
-        Groups = list(stand=MBaikiFormatted$TraitData$Id.sp)
+        Groups = list(stand=as.factor(MBaikiFormatted$TraitData$Id.sp))
       } 
       myYear = input$yearslider_strDiam
       tabEffs <- GetTabSD(ResultTestMB, Groups = Groups, MyDate = myYear)
@@ -813,9 +818,9 @@ Plot_Indicateur <- function(MyTimeInterval=NULL){
       Indicator = ListOfIndicators[[i]]
     }
     if(input$selectGEIAll == FALSE){
-      Groups=list(stand=input$groupe_espece_indicateur)
+      Groups=list(stand=as.factor(input$groupe_espece_indicateur))
     }else{
-      Groups = list(stand=MBaikiFormatted$TraitData$Id.sp)
+      Groups = list(stand=as.factor(MBaikiFormatted$TraitData$Id.sp))
     } 
     p <- ggplot()
     if(Indicator$NomInd == "Volume exploitable" || Indicator$NomInd == "Stock exploitable"){

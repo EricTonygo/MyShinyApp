@@ -12,6 +12,7 @@ FCM <-function(out.InferFCM=NULL, ParamSim = NULL){
   Starting.plot = ParamSim$Starting.plot
   StartingDate = ParamSim$StartingDate
   MySpeciesTraits = ParamSim$MySpeciesTraits
+  MySpeciesTraits$Id.sp = as.factor(MySpeciesTraits$Id.sp)
   Logging = ParamSim$Logging
   Date1PostLog.Check = ParamSim$Date1PostLog.Check
   Fin.simu = ParamSim$Fin.simu
@@ -273,7 +274,7 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   
   DataOutputs[,Eff:=Eff/Surface]
   
-  
+  #browser()
   Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
   Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=T,all.y=F)
   
@@ -303,12 +304,11 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   Mytitle =""
   
   for (g in 1:length(Groups)){
-    
+    #browser()
     SimulationTmp=subset(Simulations,Id.sp%in%Groups[[g]])
-    
+    #browser()
     Indicateurs=SimulationTmp[,list(Effs=sum(Efft)),by="Id.zone,iter,Temps"]
     Indicateurs=Indicateurs[order(Indicateurs$Temps),]
-    
     
     # Structure diamétriques
     

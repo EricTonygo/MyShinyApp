@@ -51,7 +51,7 @@ Col_ClasseDiam = c()
 ST= c()
 Biomass = c()
 Vol= c()
-Id.sp = SpeciesTraits$Id.sp
+Id.sp = as.character(SpeciesTraits$Id.sp)
 Nb_Id.sp = length(Id.sp)
 tarifsCubage= SpeciesTraits$tarifs
 ClasseDiamDME = findInterval(SpeciesTraits$DME[1], ClassesDiam)
@@ -75,11 +75,8 @@ for (j in 1: Nb_Id.sp) {
       tmp=integrate(function(x) alpha*FunctionTarif(x)*exp(-alpha*x)/(exp(-alpha*ClasseDiam2[i])-exp(-alpha*ClasseDiam2[i+1])),ClasseDiam2[i],ClasseDiam2[i+1])
       Vol= c(Vol, tmp$value)
     }
-    
-    
   }
-} 
-
+}
 # ram?ne les effectifs
 #Eff=rep(1,NbClasse)
 Eff=rep(1,length(Col_ClasseDiam))
