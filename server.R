@@ -650,7 +650,7 @@ output$vector_damage <-rhandsontable::renderRHandsontable({
     hot_table(highlightCol = TRUE, highlightRow = TRUE) %>%
     hot_cols(columnSorting = TRUE, colWidths= colWidths, manualColumnResize=TRUE, fixedColumnsLeft=1) 
 })
-
+  ######Fonction du tracé de la structure diametrique et de l'affichage des données de l'évolution dans le temps###########
 observeEvent(input$plot_SCD,{
   if(input$whatSD == 1){
     execute_plotSCD <- reactive({
@@ -803,7 +803,7 @@ observeEvent(input$action_indicateur,{
     shinyjs::show('update_indicateur')
   }
 })
-
+######Fonction du tracé de l'indicateur et de l'affichage des données de l'évolution dans le temps###########
 Plot_Indicateur <- function(MyTimeInterval=NULL){
   tryCatch({
     validate(
@@ -843,7 +843,7 @@ Plot_Indicateur <- function(MyTimeInterval=NULL){
         MyClassesDiam = as.factor(c(input$classMin:input$classMax))
       }
     }
-    ######Function PlotSCD renvoi le graphe de l'indicateur contenant aussi ses données###########
+    ######Fonction PlotSCD renvoie le graphe de l'indicateur contenant aussi ses données###########
     p <- PlotMyIndicator(ResultTestMB, Groups = Groups, MyClassesDiam = MyClassesDiam, MyTimeInterval = MyTimeInterval, MyIndicator = Indicator)
     plotbuild <- ggplot_build(p)
     DataToExport = data.frame()
@@ -945,7 +945,7 @@ observeEvent(input$selectGESDAll,{
     shinyjs::show("groupe_espece_strDia_col")
   }
 })
-
+######Fonction de l'exportation des données de l'indicateur sous format pdf et csv###########
 output$download_indic_data <- downloadHandler(
   
   filename = function() {paste(input$indicateur,Sys.Date(),'.', input$extensionData, sep='')},
@@ -961,6 +961,7 @@ output$download_indic_data <- downloadHandler(
     rm(DataToExport)
   }
 )
+######Fonction de l'exportation des données de la structure diametrique sous format pdf et csv###########
 output$download_strucDiam_data <- downloadHandler(
   
   filename = function() {paste("structure_dia_cumul", Sys.Date(), '.',input$extensionSDData, sep='')},
@@ -984,6 +985,7 @@ plotStrInput <- function(MyPlot = NULL){
 plotInput <- function(MyPlot = NULL){
   print(MyPlot)
 }
+######Fonction de l'exportation du graphique de l'indicateur sous format pdf, png, jpeg###########
 output$download_indic_rg <- downloadHandler(
   filename =  function() {
     paste(input$indicateur,Sys.Date(), input$extension, sep=".")
@@ -1004,7 +1006,7 @@ output$download_indic_rg <- downloadHandler(
     }
     rm(PlotToExport)
   })
-
+######Fonction de l'exportation du graphique de la structure diametrique sous format pdf, png, jpeg###########
 output$download_strucDiam_rg <- downloadHandler(
   filename =  function() {
     paste("Structure_Diametrique",Sys.Date(), input$extensionSD, sep=".")
@@ -1025,6 +1027,7 @@ output$download_strucDiam_rg <- downloadHandler(
     }
     rm(PlotToExport)
   })
+######Fonction de l'image de la page d'accueil au lancement de l'application###########
 output$imageDynaffor <- renderImage({
   # When input$n is 3, filename is ./images/logoDynaffor
   filename <- normalizePath(file.path('./images',
@@ -1036,7 +1039,7 @@ output$imageDynaffor <- renderImage({
   
 }, deleteFile = FALSE)
 shinyjs::hide('boxloader')
-
+######Mise à jour des inputs sur l'interface graphique du fichier ui.R###########
 updateSelectizeInput(session, "parcelle",  choices = levels(MBaikiFormatted$SimulatingData$Id.zone),
                      selected = NULL, server = TRUE)
 updateSelectizeInput(session, "groupe_espece_indicateur", choices = MBaikiFormatted$TraitData$Id.sp,
