@@ -447,9 +447,7 @@ shinyServer(function(input, output, session){
   
   ############ Ajout d'un indicateur #########################
   observeEvent(input$Ajout_indicateur,{
-
     tryCatch({
-      
       validate(
         need(input$nom_indicateur_new != "", "Vueillez entrer le nom de l'indicateur"),
         need(input$fonction_indicateur_new !="", "Veuillez entrer la formulation mathématique de l'indicateur")
@@ -486,6 +484,7 @@ shinyServer(function(input, output, session){
           save(ResultTestMB,file="data/ResultTestMB.RData")
         }
         save(listeIndicateur,file="data/FileIndicateur.RData")
+        ######Mise à jour de la liste de indicateurs sur l'interface utilisateur de visualisation des indicateurs###########
         updateSelectIndicator()
         shinyjs::hide('boxloader_add_IND')
         shinyjs::show('action_add_IND')
@@ -498,7 +497,6 @@ shinyServer(function(input, output, session){
     },error=function(e){
       shinyjs::hide('boxloader_add_IND')
       shinyjs::show('action_add_IND')
-      #shinyjs::info("Une erreur s'est produite au niveau du serveur")
       shinyjs::info(e)
     })
   })
@@ -514,7 +512,6 @@ shinyServer(function(input, output, session){
       
       shinyjs::hide('action_update_delete_IND')
       shinyjs::show('boxloader_update_IND')
-      #browser()
       if(file.exists("data/FileIndicateur.RData") && file.access(names = "data/FileIndicateur.RData", mode = 4)==0){
         load("data/FileIndicateur.RData")
       }else{
@@ -544,7 +541,9 @@ shinyServer(function(input, output, session){
           save(ResultTestMB,file="data/ResultTestMB.RData")
         }
         save(listeIndicateur,file="data/FileIndicateur.RData")
+        ######Mise à jour de la liste de indicateurs sur l'interface utilisateur pour la modification des indicateurs###########
         loadUpdatedIndicator()
+        ######Mise à jour de la liste de indicateurs sur l'interface utilisateur pour la visualisation des indicateurs###########
         updateSelectIndicator()
         shinyjs::hide('boxloader_update_IND')
         shinyjs::show('action_update_delete_IND')
@@ -592,7 +591,9 @@ shinyServer(function(input, output, session){
           save(ResultTestMB,file="data/ResultTestMB.RData")
         }
         save(listeIndicateur,file="data/FileIndicateur.RData")
+        ######Mise à jour de la liste de indicateurs sur l'interface utilisateur pour la modification des indicateurs###########
         loadUpdatedIndicator()
+        ######Mise à jour de la liste de indicateurs sur l'interface utilisateur pour la visualisation des indicateurs###########
         updateSelectIndicator()
         shinyjs::hide('boxloader_update_IND')
         shinyjs::show('action_update_delete_IND')
@@ -610,7 +611,7 @@ shinyServer(function(input, output, session){
   })
   
   
-  #########################save param logging####################################
+  ###########Creation de la table des espèces de la forêt pour les paramètres d'exploitation############
   load("data/DataMBaikiFCM.RData")
   MBaikiSpeciesTraits = MBaikiFormatted$TraitData
   output$data_logging <-rhandsontable::renderRHandsontable({
@@ -628,7 +629,7 @@ shinyServer(function(input, output, session){
       hot_col(col = "Nom", type = "autocomplete", source =data_log$nomEspece)
     #print(data_log$nomEspece)
 })
-
+  ######Creation de la table du vecteur des degats avec les colonnes correspondant aux classes de diamètre###########
 output$vector_damage <-rhandsontable::renderRHandsontable({
   source("ParamInferenceMBaiki.R",local = T)
   StrEval1= "data_log = data.frame("
@@ -667,37 +668,42 @@ observeEvent(input$plot_SCD,{
         Groups = list(stand=as.factor(MBaikiFormatted$TraitData$Id.sp))
       }
       p <- ggplot()
+      ######Function PlotSCD renvoi le graphe de la structure diametrique cummulée contenant aussi ses données###########
       p <- PlotSCD(ResultTestMB, Groups = Groups)
+      DataToExportSCD = data.frame()
+      PlotToExportSCD = p
       plotbuild <- ggplot_build(p)
-      data_class1 <- plotbuild$data[[1]]
-      data_class1 <- data.table(Temps=data_class1$x, `Cumul de la classe 1`=data_class1$y, key = "Temps")
-      DataToExportTmp <- data_class1
-      data_class2 <- plotbuild$data[[2]]
-      data_class2 <- data.table(Temps=data_class2$x, `Cumul de la classe 2`=data_class2$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class2, all.x=T, all.y=T)
-      data_class3 <- plotbuild$data[[3]]
-      data_class3 <- data.table(Temps=data_class3$x, `Cumul de la classe 3`=data_class3$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class3, all.x=T, all.y=T)
-      data_class4 <- plotbuild$data[[4]]
-      data_class4 <- data.table(Temps=data_class4$x, `Cumul de la classe 4`=data_class4$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class4, all.x=T, all.y=T)
-      data_class5 <- plotbuild$data[[5]]
-      data_class5 <- data.table(Temps=data_class5$x, `Cumul de la classe 5`=data_class5$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class5, all.x=T, all.y=T)
-      data_class6 <- plotbuild$data[[6]]
-      data_class6 <- data.table(Temps=data_class6$x, `Cumul de la classe 6`=data_class6$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class6, all.x=T, all.y=T)
-      data_class7 <- plotbuild$data[[7]]
-      data_class7 <- data.table(Temps=data_class7$x, `Cumul de la classe 7`=data_class7$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class7, all.x=T, all.y=T)
-      data_class8 <- plotbuild$data[[8]]
-      data_class8 <- data.table(Temps=data_class8$x, `Cumul de la classe 8`=data_class8$y, key = "Temps")
-      DataToExportTmp <- merge(DataToExportTmp, data_class8, all.x=T, all.y=T)
+      if(length(plotbuild$data) >= 1 && nrow(plotbuild$data[[1]]) != 0){
+        data_class1 <- plotbuild$data[[1]]
+        data_class1 <- data.table(Temps=data_class1$x, `Cumul de la classe 1`=data_class1$y, key = "Temps")
+        DataToExportTmp <- data_class1
+        data_class2 <- plotbuild$data[[2]]
+        data_class2 <- data.table(Temps=data_class2$x, `Cumul de la classe 2`=data_class2$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class2, all.x=T, all.y=T)
+        data_class3 <- plotbuild$data[[3]]
+        data_class3 <- data.table(Temps=data_class3$x, `Cumul de la classe 3`=data_class3$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class3, all.x=T, all.y=T)
+        data_class4 <- plotbuild$data[[4]]
+        data_class4 <- data.table(Temps=data_class4$x, `Cumul de la classe 4`=data_class4$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class4, all.x=T, all.y=T)
+        data_class5 <- plotbuild$data[[5]]
+        data_class5 <- data.table(Temps=data_class5$x, `Cumul de la classe 5`=data_class5$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class5, all.x=T, all.y=T)
+        data_class6 <- plotbuild$data[[6]]
+        data_class6 <- data.table(Temps=data_class6$x, `Cumul de la classe 6`=data_class6$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class6, all.x=T, all.y=T)
+        data_class7 <- plotbuild$data[[7]]
+        data_class7 <- data.table(Temps=data_class7$x, `Cumul de la classe 7`=data_class7$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class7, all.x=T, all.y=T)
+        data_class8 <- plotbuild$data[[8]]
+        data_class8 <- data.table(Temps=data_class8$x, `Cumul de la classe 8`=data_class8$y, key = "Temps")
+        DataToExportTmp <- merge(DataToExportTmp, data_class8, all.x=T, all.y=T)
+        DataToExportSCD = DataToExportTmp
+        PlotToExportSCD = p
+      }
       output$plot_strDia <- renderPlot({
         print(p)
       })
-      DataToExportSCD = DataToExportTmp
-      PlotToExportSCD = p
       output$data_strDia <- DT::renderDataTable(DataToExportSCD)
       save(DataToExportSCD, file = "data/DataExportSCD.RData")
       save(PlotToExportSCD, file = "data/PlotToExportSCD.RData")
@@ -722,6 +728,7 @@ observeEvent(input$plot_SCD,{
         Groups = list(stand=as.factor(MBaikiFormatted$TraitData$Id.sp))
       } 
       myYear = input$yearslider_strDiam
+      ######Function GetTabSD renvoie  la matrix des données de la structure diametrique contenu dans le fichier MyAppInterfaceWithSimulator.R###########
       tabEffs <- GetTabSD(ResultTestMB, Groups = Groups, MyDate = myYear)
       #year_plot= myYear-StartingDate +1
       StrEval = "ClassDiamPlot = c("
@@ -836,29 +843,58 @@ Plot_Indicateur <- function(MyTimeInterval=NULL){
         MyClassesDiam = as.factor(c(input$classMin:input$classMax))
       }
     }
-    
+    ######Function PlotSCD renvoi le graphe de l'indicateur contenant aussi ses données###########
     p <- PlotMyIndicator(ResultTestMB, Groups = Groups, MyClassesDiam = MyClassesDiam, MyTimeInterval = MyTimeInterval, MyIndicator = Indicator)
     plotbuild <- ggplot_build(p)
-    data_med <- plotbuild$data[[1]]
-    temps= data_med$x
-    ExpPlot = paste0("data_med <- data.table(Temps=data_med$x, Med",Indicator$VarInd,'=data_med$y, key = "Temps")', collapse = '')
-    eval(parse(text = ExpPlot))
-    DataToExportTmp <- data_med
-    data_li <- plotbuild$data[[2]]
-    ExpPlot = paste0("data_li <- data.table(Temps=data_li$x, Min",Indicator$VarInd,'=data_li$y, key = "Temps")', collapse = '')
-    eval(parse(text = ExpPlot))
-    DataToExportTmp = merge(DataToExportTmp, data_li, all.x=T, all.y=T)
-    data_ls <- plotbuild$data[[3]]
-    ExpPlot = paste0("data_ls <- data.table(Temps=data_ls$x, Max",Indicator$VarInd,'=data_ls$y, key = "Temps")', collapse = '')
-    eval(parse(text = ExpPlot))
-    DataToExportTmp = merge(DataToExportTmp, data_ls, all.x=T, all.y=T)
-    data_verif <- plotbuild$data[[4]]
-    ExpPlot = paste0("data_verif <- data.table(Temps=data_verif$x, Verif",Indicator$VarInd,'=data_verif$y, key = "Temps")', collapse = '')
-    eval(parse(text = ExpPlot))
-    DataToExportTmp = merge(DataToExportTmp, data_verif, all.x=T, all.y=T)
-    DataToExport = DataToExportTmp
+    DataToExport = data.frame()
     PlotToExport = p
-    names(DataToExport) <- c("Temps", paste0("Mediane de ", Indicator$VarInd, collapse = ''), paste0("Minimum de ", Indicator$VarInd, collapse = ''), paste0("Maximum de ", Indicator$VarInd, collapse = ''), paste0("Données réelles de ", Indicator$VarInd, collapse = ''))
+    taille = length(plotbuild$data)
+    printData= TRUE
+    if(taille > 1 && nrow(plotbuild$data[[1]]) != 0){
+      entete = c("Temps")
+      if(taille > 1){
+        data_med <- plotbuild$data[[1]]
+        temps= data_med$x
+        ExpPlot = paste0("data_med <- data.table(Temps=data_med$x, Med",Indicator$VarInd,'=data_med$y, key = "Temps")', collapse = '')
+        eval(parse(text = ExpPlot))
+        DataToExportTmp <- data_med
+        entete = c(entete, paste0("Mediane de ", Indicator$VarInd, collapse = ''))
+      }
+      if(taille >= 2){
+        data_li <- plotbuild$data[[2]]
+        ExpPlot = paste0("data_li <- data.table(Temps=data_li$x, Min",Indicator$VarInd,'=data_li$y, key = "Temps")', collapse = '')
+        eval(parse(text = ExpPlot))
+        DataToExportTmp = merge(DataToExportTmp, data_li, all.x=T, all.y=T)
+        entete = c(entete, paste0("Minimum de ", Indicator$VarInd, collapse = ''))
+      }
+      if(taille >= 3){
+        data_ls <- plotbuild$data[[3]]
+        ExpPlot = paste0("data_ls <- data.table(Temps=data_ls$x, Max",Indicator$VarInd,'=data_ls$y, key = "Temps")', collapse = '')
+        eval(parse(text = ExpPlot))
+        DataToExportTmp = merge(DataToExportTmp, data_ls, all.x=T, all.y=T)
+        entete = c(entete, paste0("Maximum de ", Indicator$VarInd, collapse = ''))
+      }
+      if(taille >= 4){
+        data_verif <- plotbuild$data[[4]]
+        ExpPlot = paste0("data_verif <- data.table(Temps=data_verif$x, Verif",Indicator$VarInd,'=data_verif$y, key = "Temps")', collapse = '')
+        eval(parse(text = ExpPlot))
+        DataToExportTmp = merge(DataToExportTmp, data_verif, all.x=T, all.y=T)
+        entete = c(entete, paste0("Données réelles de ", Indicator$VarInd, collapse = ''))
+      }
+    }else if(taille==1 && nrow(plotbuild$data[[1]]) != 0){
+      data_verif <- plotbuild$data[[1]]
+      ExpPlot = paste0("data_verif <- data.table(Temps=data_verif$x, Verif",Indicator$VarInd,'=data_verif$y, key = "Temps")', collapse = '')
+      eval(parse(text = ExpPlot))
+      DataToExportTmp = merge(DataToExportTmp, data_verif, all.x=T, all.y=T)
+      entete = c("Temps", entete, paste0("Données réelles de ", Indicator$VarInd, collapse = ''))
+    }else{
+      printData= FALSE
+    }
+    if(printData){
+      DataToExport = DataToExportTmp
+      PlotToExport = p
+      names(DataToExport) <- entete
+    }
     output$data_indicateur <- DT::renderDataTable(DataToExport)
     output$plot_indicateur <- renderPlot({
       print(p)
