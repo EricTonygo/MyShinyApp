@@ -22,13 +22,16 @@ shinyServer(function(input, output, session){
   session$onSessionEnded(function() {
     stopApp()
   })
+  ############################## Creation du dossier de sauvegarde des paramètres de la simulation ##############################
+  ParamsimFolder = path.expand(path="~/DafSim/ParametresSimulation")
+  if(!dir.exists(ParamsimFolder)) dir.create(ParamsimFolder, recursive = TRUE)
   #volumes <- getVolumes()
   ##################################################################################################################################
   #initialisation du dossier par defaut dans lequel se feront la sauvegarde et le chargement des paramètrages des simulations
   #contenant des scéarios d'exploitation forestière et les autres parmètres de la simulation
   #Puis initialisation des fonctions de sauvegarde et chargement des fichiers au format .RData
   ##################################################################################################################################
-  roots = c(wd="./ParametresSimulation")
+  roots = c(wd=ParamsimFolder)
   shinyFileSave(input, 'save_config', session=session, roots=roots, restrictions = system.file(package = "base"))
   shinyFileChoose(input, 'load_config', session=session,
                   roots=roots, filetypes=c('', 'RData'))
@@ -62,19 +65,26 @@ shinyServer(function(input, output, session){
   }
   
   loadUpdatedIndicator<-function(){
+    
     tryCatch({
-      load("data/FileIndicateur.RData")
-      listeIndicateurTmp = listeIndicateur 
-      vectorIndicator = c()
-      for(i in 1:length(listeIndicateurTmp)){
-        indicator= listeIndicateurTmp[[i]]
-        vectorIndicator = c(vectorIndicator, indicator$NomInd)
+      if(file.exists("data/FileIndicateur.RData") && file.access(names = "data/FileIndicateur.RData", mode = 4)==0){
+        load("data/FileIndicateur.RData")
+      }else{
+        listeIndicateur= list()
       }
+      vectorIndicator = c()
+      if(length(listeIndicateur) > 0){
+        for(i in 1:length(listeIndicateur)){
+          indicator= listeIndicateur[[i]]
+          vectorIndicator = c(vectorIndicator, indicator$NomInd)
+        }
+      }
+      
       updateSelectInput(session, "nom_indicateur_update", label = "indicateur", choices = vectorIndicator,
                         selected = NULL)
       rm(listeIndicateur)
     },error=function(e){
-      
+      shinyjs::info(e)
     })
   }
   
@@ -84,22 +94,26 @@ shinyServer(function(input, output, session){
   ##################################################################################################################################
   observeEvent(input$nom_indicateur_update, {
     tryCatch({
-      load("data/FileIndicateur.RData")
-      error_add_ind = FALSE
+      if(file.exists("data/FileIndicateur.RData") && file.access(names = "data/FileIndicateur.RData", mode = 4)==0){
+        load("data/FileIndicateur.RData")
+      }else{
+        listeIndicateur= list()
+      }
+      trouve = FALSE
       i=1
       indicateur= list()
-      while(!error_add_ind && i<=length(listeIndicateur)){
+      while(!trouve && i<=length(listeIndicateur)){
         indicateur= listeIndicateur[[i]]
         if(indicateur$NomInd== input$nom_indicateur_update ){
-          error_add_ind=TRUE
+          trouve=TRUE
         }
         i=i+1
       }
       #Mise à jour du textarea contenant la formule mathématique de l'indicateur necessaire pour son extraction
-      updateAceEditor(session, "fonction_indicateur_update", indicateur$Func,
+      if(trouve) updateAceEditor(session, "fonction_indicateur_update", indicateur$Func,
                       mode="r", theme="chrome",autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
     },error=function(e){
-      
+      shinyjs::info(e)
     })
     
   })
@@ -502,8 +516,6 @@ shinyServer(function(input, output, session){
   })
   #########################Modification des indicateurs####################################
   observeEvent(input$update_indicateur,{
-    
-    
     tryCatch({
       validate(
         need(input$nom_indicateur_update != "", "Vueillez selectionner un indicateur"),
@@ -561,16 +573,19 @@ shinyServer(function(input, output, session){
   })
   #########################delete indicateur####################################
   observeEvent(input$delete_indicateur,{
-    shinyjs::hide('action_update_delete_IND')
-    shinyjs::show('boxloader_update_IND')
     tryCatch({
+      validate(
+        need(input$nom_indicateur_update != "", "Vueillez selectionner un indicateur"),
+        need(input$fonction_indicateur_update !="", "Veuillez entrer la formulation mathématique de l'indicateur")
+      )
       
-      load("data/FileIndicateur.RData")
-    },error=function(e){
-      listeIndicateur= list()
-    })
-    
-    tryCatch({
+      shinyjs::hide('action_update_delete_IND')
+      shinyjs::show('boxloader_update_IND')
+      if(file.exists("data/FileIndicateur.RData") && file.access(names = "data/FileIndicateur.RData", mode = 4)==0){
+        load("data/FileIndicateur.RData")
+      }else{
+        listeIndicateur= list()
+      }
       trouve=FALSE
       indicateur=list()
       nbreInd = length(listeIndicateur)
@@ -817,7 +832,7 @@ Plot_Indicateur <- function(MyTimeInterval=NULL){
     shinyjs::hide('afficher_indicateur')
     shinyjs::show('boxloader_IND')
     load("data/ResultTestMB.RData")
-    load("data/FileIndicateur.RData")
+    #load("data/FileIndicateur.RData")
     i= 1
     Indicator = ListOfIndicators[[i]]
     while (Indicator$NomInd != input$indicateur) {
@@ -950,13 +965,17 @@ output$download_indic_data <- downloadHandler(
   
   filename = function() {paste(input$indicateur,Sys.Date(),'.', input$extensionData, sep='')},
   content = function(file) {
-    load("data/DataExport.RData")
-    if(input$extensionData == "pdf"){
-      pdf(file = file)
-      gridExtra::grid.table(DataToExport)
-      dev.off()
+    if(file.exists("data/DataExport.RData") && file.access(names = "data/DataExport.RData", mode = 4)==0){
+      load("data/DataExport.RData")
+      if(input$extensionData == "pdf"){
+        pdf(file = file)
+        gridExtra::grid.table(DataToExport)
+        dev.off()
+      }else{
+        write.table(DataToExport, file, col.names=TRUE, row.names = FALSE, sep=";")
+      }
     }else{
-      write.table(DataToExport, file, col.names=TRUE, row.names = FALSE, sep=";")
+      DataToExport = data.frame()
     }
     rm(DataToExport)
   }
@@ -966,13 +985,17 @@ output$download_strucDiam_data <- downloadHandler(
   
   filename = function() {paste("structure_dia_cumul", Sys.Date(), '.',input$extensionSDData, sep='')},
   content = function(file) {
-    load("data/DataExportSCD.RData")
-    if(input$extensionSDData == "pdf"){
-      pdf(file = file)
-      gridExtra::grid.table(DataToExport)
-      dev.off()
+    if(file.exists("data/DataExportSCD.RData") && file.access(names = "data/DataExportSCD.RData", mode = 4)==0){
+      load("data/DataExportSCD.RData")
+      if(input$extensionSDData == "pdf"){
+        pdf(file = file)
+        gridExtra::grid.table(DataToExport)
+        dev.off()
+      }else{
+      write.table(DataToExportSCD, file, col.names=TRUE, row.names = FALSE, sep=";")
+      }
     }else{
-    write.table(DataToExportSCD, file, col.names=TRUE, row.names = FALSE, sep=";")
+      DataToExportSCD = data.frame()
     }
     rm(DataToExportSCD)
   }
@@ -992,17 +1015,21 @@ output$download_indic_rg <- downloadHandler(
   },
   # content is a function with argument file. content writes the plot to the device
   content = function(file) {
-    load("data/PlotToExport.RData")
-    if(input$extension == "pdf"){
-      device <- function(..., width, height) {
-        grDevices::pdf(..., width = width, height = height)
+    if(file.exists("data/PlotToExport.RData") && file.access(names = "data/PlotToExport.RData", mode = 4)==0){
+      load("data/PlotToExport.RData")
+      if(input$extension == "pdf"){
+        device <- function(..., width, height) {
+          grDevices::pdf(..., width = width, height = height)
+        }
+        ggsave(file, plot = PlotToExport, device = device(width = 17, height = 6))
+      }else{
+        StrEval = paste0(input$extension, '(file, width=900)')
+        eval(parse(text = StrEval))
+        plotInput(MyPlot = PlotToExport) # for GGPLOT
+        dev.off()  # turn the device off
       }
-      ggsave(file, plot = PlotToExport, device = device(width = 17, height = 6))
     }else{
-      StrEval = paste0(input$extension, '(file, width=900)')
-      eval(parse(text = StrEval))
-      plotInput(MyPlot = PlotToExport) # for GGPLOT
-      dev.off()  # turn the device off
+      PlotToExport = ggplot()
     }
     rm(PlotToExport)
   })
@@ -1013,19 +1040,23 @@ output$download_strucDiam_rg <- downloadHandler(
   },
   # content is a function with argument file. content writes the plot to the device
   content = function(file) {
-    load("data/PlotToExportSCD.RData")
-    if(input$extensionSD == "pdf"){
-      device <- function(..., width, height) {
-        grDevices::pdf(..., width = width, height = height)
+    if(file.exists("data/PlotToExportSCD.RData") && file.access(names = "data/PlotToExportSCD.RData", mode = 4)==0){
+      load("data/PlotToExportSCD.RData")
+      if(input$extensionSD == "pdf"){
+        device <- function(..., width, height) {
+          grDevices::pdf(..., width = width, height = height)
+        }
+        ggsave(file, plot = PlotToExportSCD, device = device(width = 17, height = 6))
+      }else{
+        StrEval = paste0(input$extensionSD, '(file, width=900)')
+        eval(parse(text = StrEval))
+        plotInput(MyPlot = PlotToExportSCD) # for GGPLOT
+        dev.off()  # turn the device off
       }
-      ggsave(file, plot = PlotToExportSCD, device = device(width = 17, height = 6))
     }else{
-      StrEval = paste0(input$extensionSD, '(file, width=900)')
-      eval(parse(text = StrEval))
-      plotInput(MyPlot = PlotToExportSCD) # for GGPLOT
-      dev.off()  # turn the device off
+      PlotToExportSCD = ggplot()
     }
-    rm(PlotToExport)
+    rm(PlotToExportSCD)
   })
 ######Fonction de l'image de la page d'accueil au lancement de l'application###########
 output$imageDynaffor <- renderImage({
@@ -1048,22 +1079,22 @@ updateSelectizeInput(session, "groupe_espece_strDia", choices = MBaikiFormatted$
                      selected = NULL,  server = TRUE)
 choicesParcelles = levels(MBaikiFormatted$SimulatingData$Id.zone)
 
-tryCatch({
+if(file.exists("data/lastTimeSimulate.RData") && file.access(names = "data/lastTimeSimulate.RData", mode = 4)==0){
   load("data/lastTimeSimulate.RData")
   updateSliderInput(session, "yearrange_indicateur", value = c(StoreTime[1], StoreTime[length(StoreTime)]),
                     min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
-}, warning=function(e){
+}else{
   updateSliderInput(session, "yearrange_indicateur", value = as.numeric(levels(MBaikiFormatted$SimulatingData$Id.campagne)[1]),
                     min = as.numeric(levels(MBaikiFormatted$SimulatingData$Id.campagne)[1]), max = as.numeric(levels(MBaikiFormatted$SimulatingData$Id.campagne)[length(levels(MBaikiFormatted$SimulatingData$Id.campagne))]), step = 1)
-})
+}
 
-tryCatch({
+if(file.exists("data/lastTimeSimulate.RData") && file.access(names = "data/lastTimeSimulate.RData", mode = 4)==0){
   load("data/lastTimeSimulate.RData")
   updateSliderInput(session, "yearslider_strDiam", value = StoreTime[1], min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
-}, warning=function(e){
+}else{
   updateSliderInput(session, "yearslider_strDiam", value = as.numeric(levels(MBaikiFormatted$SimulatingData$Id.campagne)[1]),
                     min = as.numeric(levels(MBaikiFormatted$SimulatingData$Id.campagne)[1]), max = as.numeric(levels(MBaikiFormatted$SimulatingData$Id.campagne)[length(levels(MBaikiFormatted$SimulatingData$Id.campagne))]), step = 1)
-})
+}
 alphaInd = MBaikiFormatted$alpha
 updateNumericInput(session, "diamMin", value = 0,
                    min = 0, max = ClassesDiam[NbClasse], step = 1)

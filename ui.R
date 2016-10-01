@@ -161,8 +161,7 @@ body <- dashboardBody(
                       #),
                       #column( id= "save_config_col" , width= 2, 
                               div(style="display:inline-block",
-                                  shinySaveButton("save_config", strong("Sauvegarder le scénario"), "Save as ..", filetype = list(RData = "RData"), buttonType = "default",
-                                                  class = "fa-save"),
+                                  shinySaveButton("save_config", strong("Sauvegarder le scénario"), "Save as ..", filetype = list(RData = "RData"), buttonType = "default"),
                                 #actionButton("save_config", strong("Sauvegarder le scénario"), icon = icon('save'), style="color:#000 !important;border-color:#979494;")
                                 tags$style(type='text/css', "#save_config { color:#000 !important;border-color:#979494 !important;}")
                               ),
@@ -398,7 +397,7 @@ body <- dashboardBody(
                       fluidRow(
                         column(width= 4,
                                selectInput(
-                                 'nom_indicateur_update', label = "Nom de l'indicateur", choices = c("Stock exploitable", "Volume exploitable", "Nombre d’arbres", "Volume d'arbres", "Surface terrière", "Biomasse", "Taux de reconstitution du stock"), width = NULL
+                                 'nom_indicateur_update', label = "Nom de l'indicateur", choices = c(), width = NULL
                                )
                                
                         )), 
