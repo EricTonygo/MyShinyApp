@@ -1,4 +1,20 @@
-FCM <-function(out.InferFCM=NULL, ParamSim = NULL){
+FCM<-function(out.InferFCM=NULL,ParamSim=NULL){
+  
+  # VR 14-11-17
+  # out.InferFCM : list of the sepcies groups for each forest dynamic processes, produced by the function InferFCM.r
+  # ParamSimfile : R file containning the set of parameters necessary to run FCM
+  
+  # The function swicht between FCM for sentier and FCM for parcelle
+  
+  if (!is.null(out.InferFCM$DataType) &&  out.InferFCM$DataType=="parcelle") out.FCM=FCMparcelle(out.InferFCM,ParamSim)
+  else out.FCM=FCMsentier(out.InferFCM,ParamSim)
+  
+  
+  return(out.FCM)
+  
+}
+
+FCMparcelle <-function(out.InferFCM=NULL, ParamSim = NULL){
   # VR 11-10-12
   
   
@@ -58,11 +74,184 @@ FCM <-function(out.InferFCM=NULL, ParamSim = NULL){
   Simulations$Id.zone=as.factor(Simulations$Id.zone)     
   
   
-  out.FCM=list(Simulations=Simulations,ParamPlotFCM=Data$DataPlotFCM,DataVerif=DataVerif,SpeciesTraits=MySpeciesTraits,ParamPlot=out.InferFCM$ParamPlot,StartingDate=Data$StartingDate,Check=Check)
+  out.FCM=list(Simulations=Simulations,ParamPlotFCM=Data$DataPlotFCM,DataVerif=DataVerif,SpeciesTraits=MySpeciesTraits,ParamPlot=out.InferFCM$ParamPlot,StartingDate=Data$StartingDate,Check=Check, DataType = "parcelle")
   class(out.FCM)<-"FCM"
   
   return(out.FCM)
 }
+
+
+FCMsentier<-function(out.InferFCM1Sp,ParamSim){
+  
+  #VR 07-10-17
+  
+  # Stand structure variables
+  ClassesDiam=out.InferFCM1Sp$ClassesDiam
+  NbClasse=length(ClassesDiam)  
+  
+  
+  # Load logging parameters
+  #source(ParamSimFile,local=T)
+  
+  
+  ###################################
+  # Parameters for the simulation   #
+  ###################################
+  
+  # Effectifs de départ
+  Effectifs =ParamSim$Effectifs
+  
+  # Essence
+  essence=ParamSim$Essence
+  
+  # number of simulations
+  nbchain=ParamSim$nbchain
+  
+  # Number of census between the loggings 
+  rotation=ParamSim$rotation
+  
+  # Number of loggs
+  Nb.rotation=ParamSim$Nb.rotation
+  
+  # Number of period before the first loggings
+  DelayLogging=ParamSim$DelayLogging
+  
+  # Number of period of disturbance of the dynamics after logging
+  DelayAfterLogging=2
+  
+  # Number of period of the "boosted" dynamic after logging
+  DelayDynamicsPostExploitation=8
+  #browser()
+  
+  # Recruitement
+  
+  ClasseDiamWeights=ParamSim$ClasseDiamWeights
+  RecruitmentRate=ParamSim$RecruitmentRate
+  
+  # Treatment
+  
+  Logging.dammage=ParamSim$vector_damage
+  Logging.intensity=ParamSim$Logging.intensity
+  
+  
+  # Optionnal : used only if Check is set on TRUE
+  ###########
+  
+  Verif=ParamSim$Check
+  Date1PostLog.Check=ParamSim$Date1PostLog.Check
+  
+  
+  
+  if (is.null(essence)) essence=names(out.InferFCM1Sp$ParaDyn)[1]
+  Id.essence=which((names(out.InferFCM1Sp$ParaDyn))==essence)
+  ParamDyn=out.InferFCM1Sp$ParaDyn[[Id.essence]]
+  
+  Fin.simu=rotation*Nb.rotation
+  
+  RecEffectifs=matrix(0,ncol=4,nrow=nbchain*NbClasse*(Fin.simu+1)+NbClasse)  
+  RecEffectifs[1:NbClasse,]=cbind(Effectifs,1:NbClasse,0,0)
+  compteur=NbClasse+1
+  
+  Survival.Logging=(1-Logging.dammage)*(1-Logging.intensity)  
+  Recruit.intensity=ClasseDiamWeights*RecruitmentRate/sum(ClasseDiamWeights)
+  
+  
+  
+  Exploitations=(0:Nb.rotation)*rotation+DelayLogging
+  
+  Fin.simu=Exploitations[length(Exploitations)]
+  
+  Exploitations=Exploitations[-length(Exploitations)]
+  
+  
+  
+  #browser()
+  # boucles des simulations
+  for (k in 1:nbchain){
+    
+    
+    
+    Eff.cur=Effectifs
+    DAL=0
+    DDPE=0
+    for (j in 0:Fin.simu){
+      DAL=DAL-1
+      DDPE=DDPE-1
+      # Mortality
+      Mort=rbinom(NbClasse,Eff.cur,prob = ParamDyn[,2+(DDPE>0)*2])  
+      
+      
+      # Recrutement + growth
+      
+      if (DAL<0){
+        In=rpois(1,sum(Eff.cur*Recruit.intensity))
+        Monte=rbinom(NbClasse,Eff.cur-Mort,prob = ParamDyn[,1+(DDPE>0)*2])
+        
+        # Update Eff.cur
+        
+        M1=c(In,Monte[-NbClasse])
+        M2=Monte+Mort
+        Eff.cur=Eff.cur+M1-M2    
+      }else{
+        Eff.cur=Eff.cur-Mort
+      }
+      
+      
+      
+      
+      
+      # Exploitations
+      
+      
+      if (j%in%Exploitations){
+        if (j==Exploitations[1] & Verif) {
+          Eff.cur=EffectifsPostExpAn1
+          DAL=DelayAfterLogging
+          DDPE=DelayDynamicsPostExploitation+DelayAfterLogging
+        }
+        else{Eff.cur=rbinom(NbClasse,Eff.cur,Survival.Logging)}
+        
+      }
+      
+      
+      # Stockage des Trajectoires
+      
+      RecEffectifs[compteur:(compteur+NbClasse-1),]=cbind(Eff.cur,1:NbClasse,j+1,k)
+      compteur=compteur+NbClasse
+      
+      
+      
+      
+      
+    }  # Fin boucle du j, trajectoire d'effectifs
+    
+    
+    
+  } # Fin boucle du k, r?p?tition MC
+  #browser()
+  
+  
+  colnames(RecEffectifs)=c("Effectifs","ClassesDiam","Temps","iter")
+  RecEffectifs=as.data.frame(RecEffectifs,stringsAsFactors = F)
+  RecEffectifs$Effectifs=as.numeric(RecEffectifs$Effectifs)
+  RecEffectifs$ClassesDiam=as.factor(RecEffectifs$ClassesDiam)
+  RecEffectifs$Temps=as.integer(RecEffectifs$Temps)
+  RecEffectifs$iter=as.integer(RecEffectifs$iter)
+  RecEffectifs$Id.sp=essence
+  RecEffectifs$Id.zone=1
+  
+  
+  
+  out.FCM=list(Simulations=RecEffectifs,SpeciesTraits=out.InferFCM1Sp$SpeciesTraits,ParamPlot=out.InferFCM1Sp$ParamPlot,StartingDate=0,Check=Verif, DataType="sentier")
+  class(out.FCM)<-"FCM"
+  #browser()
+  return(out.FCM)
+  
+  
+  
+}
+
+
 
 FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.InferFCM,ParcelleDepart,LoggingFunction,Verif,Surface){
   
@@ -237,8 +426,15 @@ FCMplot<-function(ParamSim, Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.Infe
 } # Fin de la fonction FCMgp
 
 
-
 PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
+  if(!is.null(out.FCM$DataType) &&  out.FCM$DataType == "sentier"){
+    PlotSCDSentier(out.FCM,Outputs,Groups,Verif)
+  }else{
+    PlotSCDParcelle(out.FCM,Outputs,Groups,Verif)
+  }
+}
+
+PlotSCDParcelle <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   #########################################
   # Fonction qui renvoie les données de la structure diamétrique des groupes d'espèce #
   #########################################
@@ -347,7 +543,125 @@ PlotSCD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
   return(Myggplot)
 }
 
+
+
+PlotSCDSentier <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL){
+  #########################################
+  # Fonction qui renvoie les données de la structure diamétrique des groupes d'espèce #
+  #########################################
+  
+  #######################
+  #
+  # out.FCM : data.frame produced by FCM.r function
+  # Outputs : list of functions to compute on the simulations
+  # Groups : list of vectors of Id.sp to cluster for plotting
+  # verif : bolean, T : plot also the real values
+  # Lab.period : Label of the period
+  # Nb.period : Number of period between the census
+  # StratingDate : initial date for the simulations
+  # Surface: Surface of the plot in ha 
+  #
+  ######################
+  
+  if (is.null(Verif)) Verif=out.FCM$Check
+  StartingDate=out.FCM$StartingDate
+  Simulations=data.table(out.FCM$Simulations,key="Id.sp")
+  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB, key="ClassesDiam")
+  NbClasse=length(levels(DataOutputs$ClassesDiam))
+  DataTraits=data.table(out.FCM$SpeciesTraits,key="Id.sp")
+  DataTraits$Id.sp=as.factor(DataTraits$Id.sp)
+  Lab.period=out.FCM$ParamPlot$Lab.period
+  Nb.period=out.FCM$ParamPlot$Nb.period
+  Surface=out.FCM$ParamPlot$Surface
+  
+  
+  # rescaling parameters at 1ha
+  
+  DataOutputs[,Eff:=Eff/Surface]
+  
+  Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
+  Simulations=merge(Simulations,DataOutputs,by="ClassesDiam",all.x=F,all.y=F)
+  
+  
+  Simulations[,Efft:=Eff*Effectifs]
+  Simulations[,Temps:=Temps*Nb.period]
+  #browser()
+  
+  if (StartingDate==0 | is.null(out.FCM$DataVerif)) Verif=F
+  Simulations[,Temps:=Temps+as.numeric(StartingDate)]
+  
+  Temps=seq(as.numeric(StartingDate),max(Simulations$Temps),Nb.period)
+  
+  if (is.null(Outputs)) OutPuts=c(1,2)
+  if (is.null(Groups)) Groups=list(stand=levels(Simulations$Id.sp))
+  
+  if (Verif){
+    DataVerif=data.table(out.FCM$DataVerif,key="Id.sp")
+    DataVerif=merge(DataVerif,DataTraits,by="Id.sp",all.x=F,all.y=F)
+    DataVerif=merge(DataVerif,DataOutputs,by="ClassesDiam",all.x=F,all.y=F)
+    DataVerif[,Efft:=Eff*Effectifs]
+    DataVerif[,Temps:=as.numeric(as.character(DataVerif$Id.campagne))]
+  }
+  
+  Simulations$ClasseDiam=as.factor(Simulations$ClasseDiam)
+  Myggplot = ggplot()
+  Mytitle =Mytitle=paste("Proportion of trees by diameter class for",names(Groups)[1])
+  
+  for (g in 1:length(Groups)){
+    
+    SimulationTmp=subset(Simulations,Id.sp%in%Groups[[g]])
+    
+    if(nrow(SimulationTmp) != 0){
+      Indicateurs=SimulationTmp[,list(Effs=sum(Efft)),by="Id.zone,iter,Temps"]
+      Indicateurs=Indicateurs[order(Indicateurs$Temps),]
+      
+      # Structure diamétriques
+      
+      IndicateursCD=SimulationTmp[,list(Effs=sum(Efft)),by="Id.zone,iter,Temps,ClasseDiam"]
+      
+      cumul=matrix(0,ncol=length(Temps),nrow=NbClasse)
+      
+      for (cd in 1:NbClasse){
+        IndicateursCDTmp=subset(IndicateursCD,ClasseDiam==levels(IndicateursCD$ClasseDiam)[cd])
+        IndicateursCDTmp=IndicateursCDTmp[,list(medEffs=median(Effs)),by="Temps"]
+        IndicateursCDTmp=IndicateursCDTmp[order(IndicateursCDTmp$Temps),]
+        IndexTemps=Temps%in%IndicateursCDTmp$Temps
+        cumul[cd,]=cumul[max(cd-1,1),]
+        cumul[cd,IndexTemps]=IndicateursCDTmp$medEffs+cumul[cd,IndexTemps]
+      }
+      cumul=apply(cumul,2,function(x) 100*x/x[NbClasse])  
+      ORD=c(0,101)
+      Myggplot <- Myggplot + ylim(ORD)
+      Mytitle=paste("Proportion of trees by diameter class for",names(Groups)[g])
+      
+      for (cd in 1:NbClasse){
+        data= data.frame(temps= Temps, cumul= cumul[cd,])
+        Myggplot=Myggplot + geom_line(data=data, aes(x=temps, y=cumul, colour=letters[cd]), size=1)
+        #plot(Temps,cumul[cd,],xlab=Lab.period,ylab="Proportion of trees by diameter class",t="l",ylim=ORD) 
+        #par(new=T)
+        
+      }
+    }
+  }
+  
+  Myggplot <- Myggplot + xlab(Lab.period)
+  Myggplot <- Myggplot + ylab("Proportion of trees by diameter class")
+  Myggplot <- Myggplot + theme(legend.position=c(1, 0.95), legend.justification=c(0,1), legend.title=element_blank())
+  Myggplot <- Myggplot + ggtitle(Mytitle)
+  #abline(h=0)
+  return(Myggplot)
+}
+
 GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
+  if(!is.null(out.FCM$DataType) && out.FCM$DataType == "sentier"){
+    GetTabSDSentier(out.FCM,Outputs,Groups,Verif,  MyDate)
+  }else{
+    GetTabSDParcelle(out.FCM,Outputs,Groups,Verif,  MyDate)
+  }
+}
+
+
+GetTabSDParcelle <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
   #########################################
   # Fonction qui renvoie les données de la structure diamétrique des groupes d'espèce #
   #########################################
@@ -439,5 +753,99 @@ GetTabSD <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
     }
   }
  
+  return(tabEffs)
+}
+
+GetTabSDSentier <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL,  MyDate=NULL){
+  #########################################
+  # Fonction qui renvoie les données de la structure diamétrique des groupes d'espèce #
+  #########################################
+  
+  #######################
+  #
+  # out.FCM : data.frame produced by FCM.r function
+  # Outputs : list of functions to compute on the simulations
+  # Groups : list of vectors of Id.sp to cluster for plotting
+  # verif : bolean, T : plot also the real values
+  # Lab.period : Label of the period
+  # Nb.period : Number of period between the census
+  # StratingDate : initial date for the simulations
+  # Surface: Surface of the plot in ha 
+  #
+  ######################
+  
+  if (is.null(Verif)) Verif=out.FCM$Check
+  StartingDate=out.FCM$StartingDate
+  Simulations=data.table(out.FCM$Simulations,key="Id.sp")
+  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB, key="ClassesDiam")
+  NbClasse=length(levels(DataOutputs$ClassesDiam))
+  DataTraits=data.table(out.FCM$SpeciesTraits,key="Id.sp")
+  DataTraits$Id.sp=as.factor(DataTraits$Id.sp)
+  Lab.period=out.FCM$ParamPlot$Lab.period
+  Nb.period=out.FCM$ParamPlot$Nb.period
+  Surface=out.FCM$ParamPlot$Surface
+  
+  
+  
+  # rescaling parameters at 1ha
+  
+  DataOutputs[,Eff:=Eff/Surface]
+  
+  
+  Simulations=merge(Simulations,DataTraits,all.x=F,all.y=F)
+  Simulations=merge(Simulations,DataOutputs,by="ClassesDiam",all.x=F,all.y=F)
+  
+  
+  Simulations[,Efft:=Eff*Effectifs] 
+  Simulations[,Temps:=Temps*Nb.period]
+  
+  
+  if (StartingDate==0 | is.null(out.FCM$DataVerif)) Verif=F
+  Simulations[,Temps:=Temps+as.numeric(StartingDate)]
+  if(!is.null(MyDate)){
+    Simulations = Simulations[Temps %in% MyDate]
+    Temps = MyDate
+  }else{
+    Temps=seq(as.numeric(StartingDate),max(Simulations$Temps),Nb.period)
+  }
+  Temps=seq(as.numeric(StartingDate),max(Simulations$Temps),Nb.period)
+  
+  if (is.null(Outputs)) OutPuts=c(1,2)
+  if (is.null(Groups)) Groups=list(stand=levels(Simulations$Id.sp))
+  
+  
+  Simulations$ClasseDiam=as.factor(Simulations$ClasseDiam)
+  tabEffs=matrix(0,ncol=3,nrow=NbClasse)
+  for (g in 1:length(Groups)){
+    
+    SimulationTmp=subset(Simulations,Id.sp%in%Groups[[g]])
+    
+    if(nrow(SimulationTmp) != 0){
+      Indicateurs=SimulationTmp[,list(Effs=sum(Efft)),by="Id.zone,iter,Temps"]
+      
+      
+      # Structure diamétriques
+      
+      IndicateursCD=SimulationTmp[,list(Effs=sum(Efft)),by="Id.zone,iter,Temps,ClasseDiam"]
+      
+      tabEffs=matrix(0,ncol=3,nrow=NbClasse)
+      for (cd in 1:NbClasse){
+        IndicateursCDTmp=subset(IndicateursCD,ClasseDiam==levels(IndicateursCD$ClasseDiam)[cd])
+        IndicateursCDTmp=IndicateursCDTmp[,list(liEffs=quantile(Effs,0.025, na.rm = TRUE), medEffs=median(Effs), lsEffs=quantile(Effs,0.975, na.rm = TRUE)),by="Temps"]
+        tabEffs[cd,]=rep(0, 3)
+        if(length(IndicateursCDTmp$medEffs)==0){
+          tabEffs[cd,1]=tabEffs[cd,1]
+          tabEffs[cd,2]=tabEffs[cd,2]
+          tabEffs[cd,3]=tabEffs[cd,3]
+        }else{
+          tabEffs[cd,1]=IndicateursCDTmp$medEffs+tabEffs[cd,1]
+          tabEffs[cd,2]=IndicateursCDTmp$liEffs+tabEffs[cd,2]
+          tabEffs[cd,3]=IndicateursCDTmp$lsEffs+tabEffs[cd,3]
+        }
+        
+      }
+    }
+  }
+  
   return(tabEffs)
 }

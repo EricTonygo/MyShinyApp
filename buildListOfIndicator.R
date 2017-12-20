@@ -1,6 +1,6 @@
 buildListIndicator<-function(){
-  if(file.exists("data/FileIndicateur.RData") && file.access(names = "data/FileIndicateur.RData", mode = 4)==0){
-    load("data/FileIndicateur.RData")
+  if(file.exists(paste0(DataFolder, "\\data\\FileIndicateur.RData")) && file.access(names = paste0(DataFolder, "\\data\\FileIndicateur.RData"), mode = 4)==0){
+    load(paste0(DataFolder, "\\data\\FileIndicateur.RData"))
   }else{
     listeIndicateur= list()
   }

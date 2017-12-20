@@ -72,66 +72,141 @@ body <- dashboardBody(
               ),
               div(id = "param_sim_logging",
                   tabBox( width = NULL,
+                          tabPanel(h5(strong("Paramètres de la dynamique")),
+                                   shinyjs::hidden(
+                                     div(id="description_site",
+                                       fluidRow(
+                                                column(width= 6,
+                                                       textInput("site", "Nom du site", value="", placeholder = "Nom du site")
+                                                ),
+                                                column(width= 6,
+                                                       textInput("pays", "Pays", value="", placeholder= "Pays du site")
+                                                )
+                                       ),
+                                       br()
+                                     )
+                                   ),
+                                  shinyFilesButton(id="load_dyn",label="Charger les paramètres de la dynamique",title='Selectionner le fichier de dynamique', multiple = FALSE),
+                                  shinyjs::hidden(div(id ='boxloader_FileDyn', width ="100px",
+                                                      div(id="img_loader_FileDyn", img(src= "trait_loader.gif", width= "100px")),
+                                                      tags$style(type='text/css', "#img_loader_FileDyn { text-align: center;}"),
+                                                      div(id="load_FileDyn_encours", strong("Chargement du fichier en cours ...")),
+                                                      tags$style(type='text/css', "#load_FileDyn_encours {text-align: center;}")
+                                  )
+                                  #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
+                                  )
+                                   ),
                           tabPanel(h5(strong("Paramètres de l'exploitation")),
                                    #rhandsontable pour les données d'exploitation
-                                   fluidRow(
-                                     column(width= 12,
-                                            textInput("tarifgenerique", "Tarif de cubage générique (en fonction du diamètre d)", value="", placeholder = "Exemple : 10^(-2.96+1.93*log10(d))"),
-                                            tags$style(type='text/css', "#tarifgenerique { display: inline-block !important;}")
-                                            
-                                     )),
-                                   fluidRow(
-                                     box(
-                                       h5(strong("Tableau des espèces à exploiter")),width = "100%",
-                                       rHandsontableOutput("data_logging", height = "500px")
-                                     )
-                                     
-                                   ),
-                                   br(),br(),
-                                   fluidRow(
-                                     column(width= 6,
-                                            numericInput("anneereprisedyn", "Nombre d'année avant la reprise de la dynamique", value=1, min = NA, max = NA, step = NA)
-                                     )
-                                     
-                                   ),
-                                   br(),br(),
                                    
-                                   fluidRow(
-                                     box(
-                                       h5(strong("Vecteur des dégâts post-exploitation par classe de diamètre (%)")), width = "100%",
-                                       rHandsontableOutput("vector_damage")
+                                   
+                                   shinyjs::hidden(
+                                     div(id="bloc_parameters_logging",
+                                         fluidRow(
+                                           column(width= 12,
+                                                  textInput("tarifgenerique", "Tarif de cubage générique (en fonction du diamètre d)", value="", placeholder = "Exemple : 10^(-2.96+1.93*log10(d))"),
+                                                  tags$style(type='text/css', "#tarifgenerique { display: inline-block !important;}")
+                                                  
+                                           )),
+                                         fluidRow(
+                                           box(
+                                             h5(strong("Tableau des espèces à exploiter")),width = "100%",
+                                             rHandsontableOutput("data_logging", height = "50px")
+                                           )
+                                           
+                                         ),
+                                         shinyjs::hidden(
+                                           br(),br(),
+                                           fluidRow(
+                                             column(width= 6,
+                                                    numericInput("anneereprisedyn", "Nombre d'année avant la reprise de la dynamique", value=1, min = NA, max = NA, step = NA)
+                                             )
+                                             
+                                           )
+                                         ),
+                                         
+                                         br(),br(),
+                                         
+                                         fluidRow(
+                                           box(
+                                             h5(strong("Vecteur des dégâts post-exploitation par classe de diamètre (%)")), width = "100%",
+                                             rHandsontableOutput("vector_damage")
+                                           )
+                                           
+                                         )
                                      )
-                                     
                                    )
                                    
                           ),
                           tabPanel(h5(strong("Paramètres de la simulation")),
-                                   fluidRow(
-                                     column(width= 6,
-                                            numericInput("anneedebutSim", "Année de debut de la simulation", value=1984, min = NA, max = NA, step = NA),
-                                            numericInput("anneefirstlogging", "Année de la première d'exploitation", value=1984, min = NA, max = NA, step = NA),
-                                            checkboxInput("Allparcelle", "Toutes les parcelles", FALSE),
-                                            conditionalPanel(
-                                              condition  = "input.Allparcelle == false",
-                                              selectizeInput(
-                                                'parcelle', label = "Parcelle à simuler", multiple= TRUE, choices = NULL,
-                                                options = list(create = FALSE)
-                                              )
-                                            ),
-                                            numericInput("dureesimulation", "Durée de la simulation", value=20, min = 0, max = Inf, step = NA)
-                                     ),
-                                     column(width= 6,
-                                            numericInput("nbchain", "Nombre de simulation", value=50, min = 0, max = Inf, step = NA),
-                                            numericInput("nombrerotation", "Nombre de rotation", value=2, min = 0, max = Inf, step = NA),
-                                            numericInput("dureerotation", "Durée d\'une rotation", value=5, min = 0, max = Inf, step = NA),
-                                            checkboxInput("check", "Validation avec les vraies données", TRUE),
-                                            conditionalPanel(
-                                              condition  = "input.check == true",
-                                              numericInput("firstyearcompare", "Première année de comparaison", value=1985, min = NA, max = NA, step = NA)
-                                              #fileInput('file_true_data', 'Importer le fichier des vraies données',
-                                              #           accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'))
-                                            )
-                                     )
+                                   shinyjs::hidden(
+                                     div(id="bloc_parameters_simulation",
+                                         fluidRow(
+                                           column(width= 6,
+                                                  numericInput("anneedebutSim", "Année de debut de la simulation", value=1984, min = NA, max = NA, step = NA),
+                                                  numericInput("nbchain", "Nombre de simulation", value=50, min = 0, max = Inf, step = NA),
+                                                  numericInput("dureesimulation", "Durée de la simulation", value=20, min = 0, max = Inf, step = NA),
+                                                  shinyjs::hidden(
+                                                    div(id="bloc_list_parcelles_sim",
+                                                        checkboxInput("Allparcelle", "Toutes les parcelles", FALSE),
+                                                        conditionalPanel(
+                                                          condition  = "input.Allparcelle == false",
+                                                          selectizeInput(
+                                                            'parcelle', label = "Parcelle à simuler", multiple= TRUE, choices = NULL,
+                                                            options = list(create = FALSE)
+                                                          )
+                                                        )
+                                                    )
+                                                  ),
+                                                  shinyjs::hidden(
+                                                    div(id="bloc_list_sentiers_sim",
+                                                        box(
+                                                          h5(strong("Choix de l'espèce")), width = "100%",
+                                                          
+                                                          fluidRow(
+                                                            column(width= 8,
+                                                                   selectizeInput(
+                                                                     'espece', label = "Espèce à simuler", multiple= FALSE, choices = NULL,
+                                                                     options = list(create = FALSE)
+                                                                   )
+                                                            ),
+                                                            column(width= 12,
+                                                                   h5(strong("Vecteur des effectifs de l'espèce exploité par classe de diamètre")),
+                                                                   rHandsontableOutput("vector_number_per_diameter_class")
+                                                            )
+                                                          )
+                                                        ),
+                                                        box(
+                                                          h5(strong("Recrutement")), width = "100%",
+                                                          fluidRow(
+                                                            column(width= 8,
+                                                                   numericInput("tauxrecrutement", "Taux de recrutement", value=0, min = 0, max = Inf, step = NA)
+                                                            ),
+                                                            column(width= 12,
+                                                                   h5(strong("Vecteur des contributions au taux recrutement")),
+                                                                   rHandsontableOutput("vector_tauxrecrutement_per_diameter_class")
+                                                            )
+                                                          )
+                                                        )
+                                                    )
+                                                  )
+                                                  
+                                           ),
+                                           column(width= 6,
+                                                  numericInput("anneefirstlogging", "Année de la première d'exploitation", value=1984, min = NA, max = NA, step = NA),
+                                                  numericInput("nombrerotation", "Nombre de rotation", value=2, min = 0, max = Inf, step = NA),
+                                                  numericInput("dureerotation", "Durée d\'une rotation", value=5, min = 0, max = Inf, step = NA),
+                                                  checkboxInput("check", "Validation avec les vraies données", FALSE),
+                                                  conditionalPanel(
+                                                    condition  = "input.check == true",
+                                                    numericInput("firstyearcompare", "Première année de comparaison", value=1985, min = NA, max = NA, step = NA)
+                                                    #fileInput('file_true_data', 'Importer le fichier des vraies données',
+                                                    #           accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'))
+                                                  )
+                                                  
+                                           )
+                                         )
+                                    )
                                    )
                           )
                   )
@@ -147,44 +222,45 @@ body <- dashboardBody(
                 ),
                 tags$style(type='text/css', "#alert_bad_success { position: fixed; left: 0%; top: 20%; z-index: 2;}")
               ),
-              
-              div(id="actions_sim",
-                  box( 
-                    width = NULL,
-                    fluidRow(
-                      column( id= "lancer_sim_col" , width= 12, 
-                              div(style="display:inline-block",
-                                actionButton("lancer_sim", strong("Lancer la simulation"), icon = icon('spinner'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
-                                tags$style(type='text/css', "#lancer_sim:hover { color:#000 !important;border-color:#979494 !important;}")
-                              ),
-                              
-                      #),
-                      #column( id= "save_config_col" , width= 2, 
-                              div(style="display:inline-block",
-                                  shinySaveButton("save_config", strong("Sauvegarder le scénario"), "Save as ..", filetype = list(RData = "RData"), buttonType = "default"),
-                                #actionButton("save_config", strong("Sauvegarder le scénario"), icon = icon('save'), style="color:#000 !important;border-color:#979494;")
-                                tags$style(type='text/css', "#save_config { color:#000 !important;border-color:#979494 !important;}")
-                              ),
-                              
-                      #),
-                      #column( id= "load_config_col" , width= 2, 
-                              div(style="display:inline-block",
-                                #actionButton("load_config", strong("Charger un scénario"), icon = icon('hourglass-half'), style="color:#000 !important;border-color:#979494;")
-                                shinyFilesButton('load_config', strong("Charger un scénario"), 'Selectionner le fichier de scénario', multiple = FALSE),
-                                tags$style(type='text/css', "#load_config { color:#000 !important;border-color:#979494 !important;}")
-                              )
-                              
-                      ),
-                      shinyjs::hidden(column(id= "gotoparameters_col", width= 2,
-                                             div(
-                                               actionButton("gotoparameters", "Revenir aux paramètres", icon = icon("cog"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
-                                               tags$style(type='text/css', "#annuler { padding-left: 5%} #gotoparameters:hover { color:#000 !important;border-color:#979494 !important;}")
-                                             )
-                      ))
-                      
+              shinyjs::hidden(
+                div(id="actions_sim",
+                    box( 
+                      width = NULL,
+                      fluidRow(
+                        column( id= "lancer_sim_col" , width= 12, 
+                                div(style="display:inline-block",
+                                  actionButton("lancer_sim", strong("Lancer la simulation"), icon = icon('spinner'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                  tags$style(type='text/css', "#lancer_sim:hover { color:#000 !important;border-color:#979494 !important;}")
+                                ),
+                                
+                        #),
+                        #column( id= "save_config_col" , width= 2, 
+                                div(style="display:inline-block",
+                                    shinySaveButton("save_config", "Sauvegarder le scénario", "Save as ..", filetype = list(RData = "RData"), buttonType = "default"),
+                                  #actionButton("save_config", strong("Sauvegarder le scénario"), icon = icon('save'), style="color:#000 !important;border-color:#979494;")
+                                  tags$style(type='text/css', "#save_config { color:#000 !important;border-color:#979494 !important; font-weight: bold;}")
+                                ),
+                                
+                        #),
+                        #column( id= "load_config_col" , width= 2, 
+                                div(style="display:inline-block",
+                                  #actionButton("load_config", strong("Charger un scénario"), icon = icon('hourglass-half'), style="color:#000 !important;border-color:#979494;")
+                                  shinyFilesButton('load_config', "Charger un scénario", 'Selectionner le fichier de scénario', multiple = FALSE),
+                                  tags$style(type='text/css', "#load_config { color:#000 !important;border-color:#979494 !important; font-weight: bold;}")
+                                )
+                                
+                        ),
+                        shinyjs::hidden(column(id= "gotoparameters_col", width= 2,
+                                               div(
+                                                 actionButton("gotoparameters", "Revenir aux paramètres", icon = icon("cog"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                 tags$style(type='text/css', "#annuler { padding-left: 5%} #gotoparameters:hover { color:#000 !important;border-color:#979494 !important;}")
+                                               )
+                        ))
+                        
+                      )
                     )
-                  )
-              )
+                )
+            )
             )
     ),
     tabItem(tabName = "indicateurs",
@@ -295,7 +371,6 @@ body <- dashboardBody(
                                       DT::dataTableOutput("data_indicateur")
                                )
                              )
-                             
                     )
             )
             #)
@@ -483,7 +558,7 @@ body <- dashboardBody(
 )
 
 dashboardPage(
-  dashboardHeader(title = strong("DafSim")),
+  dashboardHeader(title = "DafSim"),
   sidebar,
   body
 )
