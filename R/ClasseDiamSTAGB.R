@@ -1,15 +1,19 @@
-ClasseDiamSTAGB<-function(ParamFile=NULL,SpeciesTraits=NULL,alpha=NULL, OtherIndicator=NULL){
-  source(ParamFile,local=T)
+ClasseDiamSTAGB<-function(ParamsDyn=NULL,ParamSim=NULL,alpha=NULL, OtherIndicator=NULL){
 # Calcul des indicateurs utiles pour plot.FCM
-
+#browser()
+ClassesDiam = ParamsDyn$ClassesDiam
 NbClasse=length(ClassesDiam)  
 ClasseDiam2=c(ClassesDiam,Inf)
-
+SpeciesTraits = ParamSim$MySpeciesTraits
 
 if (is.null(alpha)){
-Effectifs=tapply(DataDepart$ClassesDiam,DataDepart$Id.sp,function(x) as.numeric(table(x)),simplify=F)
-DataStart[[p]]=sapply(Effectifs,function(x) if(is.null(x)) rep(0,NbClasse) else x)
-EffectifsTotaux=apply(DataStart[[p]],1,sum)+EffectifsTotaux
+  if(tolower(ParamsDyn$DataType) == "parcelle"){
+    Effectifs=tapply(DataDepart$ClassesDiam,DataDepart$Id.sp,function(x) as.numeric(table(x)),simplify=F)
+    DataStart[[p]]=sapply(Effectifs,function(x) if(is.null(x)) rep(0,NbClasse) else x)
+    EffectifsTotaux=apply(DataStart[[p]],1,sum)+EffectifsTotaux
+  }else if(tolower(ParamsDyn$DataType) == 'sentier'){
+    EffectifsTotaux = ParamSim$Effectifs
+  }
 
 # Calcul du param?tre  alpha de la distribution exponentielle des diam?tres
 
@@ -63,7 +67,7 @@ for (j in 1: Nb_Id.sp) {
   
   for (i in 1:NbClasse){
     indice = (j-1)*NbClasse +i
-    print(indice)
+    #print(indice)
     Col_Id.sp[indice] = Id.sp[j]
     Col_ClasseDiam[indice] =  i
     tmp=integrate(function(x) alpha*SurfT(x)*exp(-alpha*x)/(exp(-alpha*ClasseDiam2[i])-exp(-alpha*ClasseDiam2[i+1])),ClasseDiam2[i],ClasseDiam2[i+1])

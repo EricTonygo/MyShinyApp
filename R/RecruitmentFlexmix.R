@@ -1,4 +1,4 @@
-RecruitmentFlexmix <-function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NULL, OtherIndicator= NULL){
+RecruitmentFlexmix <-function(ParamsDyn,criterion="BIC", SpeciesTraits= NULL, OtherIndicator= NULL){
 
   
 library(flexmix)  
@@ -217,7 +217,12 @@ GpParamApartSpecies<-function(Gp,ParamGp,ListApartSpecies,Model,Family,Data,comp
   
   
   # loading user's parameters 
-  source(ParamFiles,local=T)
+  #source(ParamFiles,local=T)
+  ClassesDiam = ParamsDyn$ClassesDiam
+  NbClasse=length(ClassesDiam)
+  Lab.period= ParamsDyn$ParamPlot$Lab.period
+  Nb.period=ParamsDyn$ParamPlot$Nb.period
+  Surface=ParamsDyn$ParamPlot$Surface
   
   ParamPlot=list(Lab.period=Lab.period,Nb.period=Nb.period,Surface=Surface)
   NomsSTTC=paste("STTC",ClassesDiam,sep='')
@@ -238,12 +243,13 @@ GpParamApartSpecies<-function(Gp,ParamGp,ListApartSpecies,Model,Family,Data,comp
 
 
   SimRecrut=list()
-  SimRecrut$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator= OtherIndicator)
+  #ParamsDyn = readRDS(ParamsDynFile)
+  SimRecrut$CDSTB=ClasseDiamSTAGB(ParamsDyn = ParamsDyn, alpha=ParamsDyn$ParamPlot$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator= OtherIndicator)
 
 
   # Formatting Data      
-  DataRecrut=FormatDataRecruitmentFlexmix(DataFormatted$ClusteringData,ClassesDiam,NbClasse,Surface,SimRecrut$CDSTB)
-  ListeIdsp=levels(DataFormatted$ClusteringData$Id.sp)
+  DataRecrut=FormatDataRecruitmentFlexmix(ParamsDyn$ClusteringData,ClassesDiam,NbClasse,Surface,SimRecrut$CDSTB)
+  ListeIdsp=levels(ParamsDyn$ClusteringData$Id.sp)
   GpRecrut=data.frame(Id.sp=ListeIdsp)
   GpRecrut$gp=0 
 

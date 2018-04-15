@@ -1,4 +1,4 @@
-GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NULL,OtherIndicator= NULL){
+GrowthFlexmix <- function(ParamsDyn, criterion="BIC", SpeciesTraits= NULL,OtherIndicator= NULL){
   
   # Fonction qui constitue les groupes d'IdVern par une proc?dure EM en utilisant FLEXMIX
   # Le choix du meilleur nombre de groupe est fait ? partir du crit?re ICL
@@ -234,8 +234,12 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTrait
   
   
   # loading user's parameters 
-  source(ParamFiles,local=T)
-  
+  #source(ParamFiles,local=T)
+  ClassesDiam = ParamsDyn$ClassesDiam
+  NbClasse=length(ClassesDiam)
+  Lab.period= ParamsDyn$ParamPlot$Lab.period
+  Nb.period=ParamsDyn$ParamPlot$Nb.period
+  Surface=ParamsDyn$ParamPlot$Surface
  
   
   # generating models  
@@ -254,11 +258,11 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTrait
   
   
   SimGrowth=list()
-  SimGrowth$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator = OtherIndicator)
+  SimGrowth$CDSTB=ClasseDiamSTAGB(ParamsDyn = ParamsDyn, alpha=ParamsDyn$ParamPlot$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator = OtherIndicator)
   
   
   # Formatting Data                     
-  DataDyn=FormatDataGrowthFlexmix(DataFormatted$ClusteringData,ClassesDiam,NbClasse,Surface,SimGrowth$CDSTB)
+  DataDyn=FormatDataGrowthFlexmix(ParamsDyn$ClusteringData,ClassesDiam,NbClasse,Surface,SimGrowth$CDSTB)
   
 
   
@@ -275,7 +279,7 @@ GrowthFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTrait
   
 
 
-  ListeIdsp=levels(DataFormatted$ClusteringData$Id.sp)
+  ListeIdsp=levels(ParamsDyn$ClusteringData$Id.sp)
   GpGrowth=data.frame(Id.sp=ListeIdsp)
   ParamGpGrowth=list()
   

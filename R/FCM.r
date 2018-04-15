@@ -33,7 +33,6 @@ FCM <-function(out.InferFCM=NULL,ParamSimFile=NULL){
       ParamStartData=list(Check=Check,StartingDate=StartingDate)
       if (Check) ParamStartData$Date1PostLog.Check=Date1PostLog.Check
       Data=StartData(out.InferFCM$SimulatingData,ParamSimFile,Starting.plot[j],out.InferFCM$ClassesDiam,ParamStartData)
-      
     }       
     
     outTmp=FCMplot(ParamSimFile,Data$DataStart,Data$Data1YearPost,out.InferFCM$SpeciesTraits,out.InferFCM,c(Starting.plot[j]),LoggingFunction=Logging,Check,out.InferFCM$ParamPlot$Surface)
@@ -116,10 +115,6 @@ FCMplot<-function(ParamSimFile,Effectifs,EffectifsPostExpAn1,SpeciesTraits,out.I
   for (j in 1:NbClasse){
     intensity.matrix[j,]=intensity.matrix[j,]*(1-Logging.Damage[j])
   }
-  
-  
-  
-  
   
   
   #Exploitation=LoggingFunctions(Exploitation,ListeIdsp)

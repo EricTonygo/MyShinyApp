@@ -1,6 +1,6 @@
 PlotMyIndicator <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, MyClassesDiam=NULL, MyTimeInterval=NULL, MyIndicator=NULL){
   if(!is.null(out.FCM$DataType) && out.FCM$DataType=="sentier"){
-    PlotMyIndicatorSentier(out.FCM,Outputs,Groups,Verif, MyClassesDiam, MyTimeInterval, MyIndicator)
+    PlotMyIndicatorParcelle(out.FCM,Outputs,Groups,Verif, MyClassesDiam, MyTimeInterval, MyIndicator) 
   }else{
     PlotMyIndicatorParcelle(out.FCM,Outputs,Groups,Verif, MyClassesDiam, MyTimeInterval, MyIndicator)
   }
@@ -40,8 +40,7 @@ PlotMyIndicatorParcelle <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, 
   Lab.period=out.FCM$ParamPlot$Lab.period
   Nb.period=out.FCM$ParamPlot$Nb.period
   Surface=out.FCM$ParamPlot$Surface
-  
-  
+
   
   # rescaling parameters at 1ha
   
@@ -51,7 +50,7 @@ PlotMyIndicatorParcelle <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, 
   
   Simulations=merge(Simulations,DataTraits,by="Id.sp", all.x=F,all.y=F)
   Simulations=merge(Simulations,DataOutputs,by=c("Id.sp", "ClassesDiam"),all.x=F,all.y=F)
-
+  
   if(MyIndicator$VarInd == "AGB"){
     Simulations[,AGBt:=AGB*Effectifs*WSG]
   }else{
@@ -92,11 +91,10 @@ PlotMyIndicatorParcelle <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, 
     DataVerif[,Temps:=as.numeric(as.character(DataVerif$Id.campagne))]
   }
   
-  Simulations$ClasseDiam=as.factor(Simulations$ClasseDiam)
+  Simulations$ClassesDiam=as.factor(Simulations$ClassesDiam)
   Myggplot = ggplot()
   Mytitle=paste(MyIndicator$NomInd,"prediciton",names(Groups)[1])
   for (g in 1:length(Groups)){
-    
     SimulationTmp=subset(Simulations,Id.sp%in%Groups[[g]])
     if(nrow(SimulationTmp) != 0){
       ExpEvalSim = paste0("Indicateurs=SimulationTmp[,list(", MyIndicator$VarInd,"s=sum(",MyIndicator$VarInd,'t)),by="Id.zone,iter,Temps"]',collapse = '')
@@ -189,14 +187,13 @@ PlotMyIndicatorSentier <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, M
   #rm(list = list(ResultTestMB, i, Indicator, listeIndicateur))
   if (is.null(Verif)) Verif=out.FCM$Check
   StartingDate=out.FCM$StartingDate
-  Simulations=data.table(out.FCM$Simulations)
+  Simulations=data.table(out.FCM$Simulations, key="Id.sp")
   #setkeyv(Simulations, c("Id.sp", "ClassesDiam"))
   Simulations$Id.sp = as.factor(Simulations$Id.sp)
-  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB)
+  DataOutputs=data.table(out.FCM$ParamPlot$CDSTB, key="ClassesDiam")
   #setkeyv(DataOutputs, c("Id.sp", "ClassesDiam"))
   
-  #browser()
-  
+
   if(!is.null(MyClassesDiam)){
     DataOutputs = DataOutputs[ClassesDiam %in% MyClassesDiam]
   }
@@ -258,7 +255,7 @@ PlotMyIndicatorSentier <-function(out.FCM,Outputs=NULL,Groups=NULL,Verif=NULL, M
     DataVerif[,Temps:=as.numeric(as.character(DataVerif$Id.campagne))]
   }
   
-  Simulations$ClasseDiam=as.factor(Simulations$ClasseDiam)
+  Simulations$ClassesDiam=as.factor(Simulations$ClassesDiam)
   Myggplot = ggplot()
   Mytitle=paste(MyIndicator$NomInd,"prediciton",names(Groups)[1])
   for (g in 1:length(Groups)){

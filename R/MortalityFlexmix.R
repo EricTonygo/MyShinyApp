@@ -1,4 +1,4 @@
-MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTraits= NULL, OtherIndicator= NULL){
+MortalityFlexmix <- function(ParamsDyn,criterion="BIC", SpeciesTraits= NULL, OtherIndicator= NULL){
   
   # Fonction qui constitue les groupes d'IdVern par une proc?dure EM en utilisant FLEXMIX
   # Le choix du meilleur nombre de groupe est fait ? partir du crit?re ICL
@@ -241,8 +241,12 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTr
   
   
   # loading user's parameters 
-  source(ParamFiles,local=T)
-  
+  #source(ParamFiles,local=T)
+  ClassesDiam = ParamsDyn$ClassesDiam
+  NbClasse=length(ClassesDiam)
+  Lab.period= ParamsDyn$ParamPlot$Lab.period
+  Nb.period=ParamsDyn$ParamPlot$Nb.period
+  Surface=ParamsDyn$ParamPlot$Surface
 
   
   # generating models  
@@ -258,11 +262,11 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTr
  
   
   SimMort=list()
-  SimMort$CDSTB=ClasseDiamSTAGB(ParamFile = ParamFiles,alpha=DataFormatted$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator = OtherIndicator)
+  SimMort$CDSTB=ClasseDiamSTAGB(ParamsDyn = ParamsDyn, alpha=ParamsDyn$ParamPlot$alpha, SpeciesTraits= SpeciesTraits, OtherIndicator = OtherIndicator)
   
   
   # Formatting Data                     
-  DataDyn=FormatDataMortalityFlexmix(DataFormatted$ClusteringData,ClassesDiam,NbClasse,Surface,SimMort$CDSTB)
+  DataDyn=FormatDataMortalityFlexmix(ParamsDyn$ClusteringData,ClassesDiam,NbClasse,Surface,SimMort$CDSTB)
  
  
 
@@ -277,7 +281,7 @@ MortalityFlexmix <- function(DataFormatted,ParamFiles,criterion="BIC", SpeciesTr
   
   
  
-  ListeIdsp=levels(DataFormatted$ClusteringData$Id.sp)
+  ListeIdsp=levels(ParamsDyn$ClusteringData$Id.sp)
   GpMortality=data.frame(Id.sp=ListeIdsp)
   ParamGpMortality=list()
   
