@@ -10,19 +10,24 @@ library(shinyBS)
 library(DT)
 library(shinyAce)
 library(shinyFiles)
+source("translations.R",local=T, encoding = 'UTF-8')
+listChoicesSDTypeStr = paste0('listChoicesSDType = list("', uiCumuled,'" = 1, "',uiBreakDownByClass, '" = 2)')
+eval(parse(text = listChoicesSDTypeStr))
+listChoicesDiamRangeTypeStr = paste0('listChoicesDiamRangeType = list("', uiCm,'" = 1, "',uiClass, '" = 2)')
+eval(parse(text = listChoicesDiamRangeTypeStr))
 sidebar <- dashboardSidebar(
   hr(),
   shinyjs::useShinyjs(),
   sidebarMenu(id="tabs",
-              menuItem(strong("Accueil"), tabName="accueil", icon=icon("home"), selected=TRUE),
-              menuItem(strong("Simulation"), tabName = "simulation", icon=icon("line-chart")),
-              menuItem(strong("Gérer les indicateurs"), tabName = "parametres", icon=icon("cog")),
-              menuItem(strong("Visualisation"),  icon = icon("television"),
-                       menuSubItem(strong("Données de simulation"), tabName = "simulating_data", icon = icon("download")),
-                       menuSubItem(strong("Indicateurs"), tabName = "indicateurs", icon = icon("dashboard")),
-                       menuSubItem(strong("Structure Diamétrique"), tabName = "structurediametrique", icon = icon("circle-o"))
+              menuItem(strong(uiMitHome), tabName="accueil", icon=icon("home"), selected=TRUE),
+              menuItem(strong(uiMitSimulation), tabName = "simulation", icon=icon("line-chart")),
+              menuItem(strong(uiMitVizualisation),  icon = icon("television"),
+                       menuSubItem(strong(uiMitDataSimulation), tabName = "simulating_data", icon = icon("download")),
+                       menuSubItem(strong(uiMitIndicators), tabName = "indicateurs", icon = icon("dashboard")),
+                       menuSubItem(strong(uiMitDiametricStructure), tabName = "structurediametrique", icon = icon("circle-o")),
+                       menuSubItem(strong(uiMitManageIndicators), tabName = "gestionindicateurs", icon=icon("cog"))
               ),
-              menuItem(strong("Aide"), tabName = "aide", icon = icon("question"))
+              menuItem(strong(uiMitHelp), tabName = "aide", icon = icon("question"))
   ),
   hr()
 )
@@ -36,8 +41,7 @@ body <- dashboardBody(
                   imageOutput("imageDynaffor")
               ),
               div(id="objectif_logiciel",
-                  #h3(strong("OUTIL D'AIDE A LA GESTION DURABLE DES EXPLOITATIONS FORESTIERES"))
-                  h3(strong("OUTIL DE SIMULATION DE LA DYNAMIQUE FORESTIERE"))
+                  h3(strong(uiSoftwareDescription))
               ),
               tags$style(type='text/css', "#image_dynaffor { text-align: center} #objectif_logiciel { text-align: center}")
               
@@ -45,7 +49,6 @@ body <- dashboardBody(
     ),
     tabItem(tabName = "simulation",
             fluidRow(
-              
               shinyjs::hidden(
                 div(id ='boxloader',
                     box(title = "",
@@ -60,9 +63,9 @@ body <- dashboardBody(
                         ),
                         fluidRow(
                           column(width= 8,
-                                 div(id="sim_encours", strong("Simulation en cours ...")),
-                                 shinyjs::hidden(div(id="sim_finish", strong("Simulation terminée avec succès"))),
-                                 shinyjs::hidden(div(id="sim_failure", strong("Echec de la simulation"))),
+                                 div(id="sim_encours", strong(paste0(uiSimulatingInProgress, " ..."))),
+                                 shinyjs::hidden(div(id="sim_finish", strong(uiSimulationTerminateSuccesfully))),
+                                 shinyjs::hidden(div(id="sim_failure", strong(uiSimulationFaillure))),
                                  tags$style(type='text/css', "#sim_encours { padding-left: 50%; text-align: center;} #sim_finish { padding-left: 50%; text-align: center; color:green} #sim_failure { padding-left: 50%; text-align: center; color:red}")
                           )
                         ),
@@ -73,7 +76,7 @@ body <- dashboardBody(
               ),
               div(id = "param_sim_logging",
                   tabBox( width = NULL,
-                          tabPanel(h5(strong("Paramètres de la dynamique")),
+                          tabPanel(h5(strong(uiDynamicParameters)),
                                    
                                    shinyjs::hidden(
                                      div(id="description_site",
@@ -81,96 +84,93 @@ body <- dashboardBody(
                                          br()
                                      )
                                    ),
-                                  shinyFilesButton(id="load_dyn",label="Charger les paramètres de la dynamique",title='Selectionner le fichier de dynamique', multiple = FALSE),
+                                  shinyFilesButton(id="load_dyn",label = uiLoadDynamicParameters, title = uiSelectDynamicFile, multiple = FALSE),
                                   shinyjs::hidden(div(id ='boxloader_FileDyn', width ="100px",
                                                       div(id="img_loader_FileDyn", img(src= "trait_loader.gif", width= "100px")),
                                                       tags$style(type='text/css', "#img_loader_FileDyn { text-align: center;}"),
-                                                      div(id="load_FileDyn_encours", strong("Chargement du fichier en cours ...")),
+                                                      div(id="load_FileDyn_encours", strong(paste0(uiLoadingFileInprogress," ..."))),
                                                       tags$style(type='text/css', "#load_FileDyn_encours {text-align: center;}")
                                   )
                                   #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
                                   )
                                    ),
-                          tabPanel(h5(strong("Paramètres de la simulation")),
+                          tabPanel(h5(strong(uiSimulationParameters)),
                                    shinyjs::hidden(
                                      div(id="bloc_parameters_simulation",
                                          fluidRow(
                                            column(width= 6,
-                                                  numericInput("anneedebutSim", "Année de debut de la simulation", value=1984, min = NA, max = NA, step = NA),
-                                                  numericInput("nbchain", "Nombre de simulation", value=50, min = 0, max = Inf, step = NA),
-                                                  numericInput("dureesimulation", "Durée de la simulation", value=20, min = 0, max = Inf, step = NA),
+                                                  selectInput(
+                                                    'siteParcelle', label = uiSimulateFromDataOfSite, multiple= FALSE, choices = NULL,
+                                                    width = NULL, selectize = TRUE
+                                                  ),
+                                                  fileInput('file_data_start', uiImportFromCSVFile, multiple = FALSE, width = NULL,
+                                                            buttonLabel = paste0(uiImportFile," ..."), placeholder = uiAnyFilechoosed, accept = c(
+                                                              "text/csv",
+                                                              "text/comma-separated-values,text/plain",
+                                                              ".csv")),
                                                   shinyjs::hidden(
                                                     div(id="bloc_list_parcelles_sim",
                                                         fluidRow(
-                                                                 column(width =  4,
-                                                                        selectInput(
-                                                                          'siteParcelle', label = "Site", multiple= FALSE, choices = NULL,
-                                                                          width = NULL, selectize = TRUE
-                                                                        )
-                                                                  ),
-                                                                 column(width = 4, id= "parcelle_col",
-                                                                        #conditionalPanel(
-                                                                          #condition  = "input.Allparcelle == false",
-                                                                          selectizeInput(
-                                                                            'parcelle', label = "Parcelle à simuler", multiple= TRUE, choices = NULL,
-                                                                            options = list(create = FALSE)
-                                                                          )
-                                                                        #)
-                                                                 ),
-                                                                 column(width =  4, id= "Allparcelle_col",
-                                                                        checkboxInput("Allparcelle", strong("Toutes les parcelles"), FALSE)
-                                                                 ),
-                                                                 tags$style(type='text/css', "#Allparcelle_col {padding-top:3.5%}")
+                                                          
+                                                          column(width = 8, id= "parcelle_col",
+                                                                 selectizeInput(
+                                                                   'parcelle', label = uiPlotsToSimulate, multiple= TRUE, choices = NULL,
+                                                                   options = list(create = FALSE)
+                                                                 )
+                                                                 #tags$style(type='text/css', "#parcelle_col {padding-right:0px}")
+                                                          ),
+                                                          column(width =  4, id= "Allparcelle_col",
+                                                                 checkboxInput("Allparcelle", strong(uiAllPlots), FALSE)
+                                                          ),
+                                                          tags$style(type='text/css', "#Allparcelle_col {padding-top:3.5%}")
                                                         )
                                                     )
                                                   ),
                                                   shinyjs::hidden(
                                                     div(id="aggregate_parcels_bloc",
-                                                        checkboxInput("aggregate_parcels", "Agréger les parcelles sélectionnées en une", FALSE)
+                                                        checkboxInput("aggregate_parcels", uiAggregateSelectedPlots, FALSE)
                                                     )
                                                   ),
                                                   shinyjs::hidden(
                                                     div(id="bloc_espece_sentier",
                                                         box(
-                                                          h5(strong("Choix de l'espèce")), width = "100%",
+                                                          h5(strong(uiChoiceOfSpecies)), width = "100%",
                                                           
                                                           fluidRow(
                                                             column(width= 8,
                                                                    selectizeInput(
-                                                                     'espece', label = "Espèce à simuler", multiple= FALSE, choices = NULL,
+                                                                     'espece', label = uiSpeciesToSimulate, multiple= FALSE, choices = NULL,
                                                                      options = list(create = FALSE)
                                                                    )
                                                             ),
                                                             column(width= 12,
-                                                                   h5(strong("Vecteur des effectifs de départ de l'espèce par classe de diamètre")),
+                                                                   h5(strong(uiVectorOfInitialNumbersOfSpeciesByDiameterClass)),
                                                                    rHandsontableOutput("vector_number_per_diameter_class")
                                                             )
                                                           )
                                                         )
                                                     )
-                                                  )
-                                           ),
-                                           column(width= 6,
-                                                  numericInput("anneefirstlogging", "Année de la première d'exploitation", value=1984, min = NA, max = NA, step = NA),
-                                                  numericInput("nombrerotation", "Nombre de rotation", value=2, min = 0, max = Inf, step = NA),
-                                                  numericInput("dureerotation", "Durée d\'une rotation", value=5, min = 0, max = Inf, step = NA),
-                                                  checkboxInput("check", "Validation avec les vraies données", FALSE),
-                                                  conditionalPanel(
-                                                    condition  = "input.check == true",
-                                                    numericInput("firstyearcompare", "Première année de comparaison", value=1985, min = NA, max = NA, step = NA)
-                                                    #fileInput('file_true_data', 'Importer le fichier des vraies données',
-                                                    #           accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'))
                                                   ),
+                                                  numericInput("surfaceparcelle", uiSurfaceOfPlots, value=1, min = NA, max = NA, step = NA),
+                                                  numericInput("anneedebutSim", uiStartYearOfSimulation, value=1984, min = NA, max = NA, step = NA),
+                                                  shinyjs::hidden(
+                                                    selectInput(
+                                                      'anneedebutSimAutreSite', label = uiStartYearOfSimulation, multiple= FALSE, choices = NULL,
+                                                      width = NULL, selectize = TRUE
+                                                    )
+                                                  ),
+                                                  numericInput("anneefirstlogging", uiYearOfFirstLogging, value=1984, min = NA, max = NA, step = NA),   
+                                                  
                                                   shinyjs::hidden(
                                                     div(id="bloc_recrutement_sentier",
                                                         box(
                                                           h5(strong("Recrutement")), width = "100%",
                                                           fluidRow(
                                                             column(width= 8,
-                                                                   numericInput("tauxrecrutement", "Taux de recrutement", value=0, min = 0, max = Inf, step = NA)
+                                                                   numericInput("tauxrecrutement", uiReproductiveFertilityRate, value=0, min = 0, max = Inf, step = NA)
                                                             ),
                                                             column(width= 12,
-                                                                   h5(strong("Vecteur des contributions au taux recrutement")),
+                                                                   h5(strong(uiPercentageOfBreedingTrees)),
                                                                    rHandsontableOutput("vector_tauxrecrutement_per_diameter_class")
                                                             )
                                                           )
@@ -178,20 +178,25 @@ body <- dashboardBody(
                                                     )
                                                   )
                                                   
+                                           ),
+                                           column(width= 6,
+                                                  numericInput("nombrerotation", uiNumberOfRotation, value=2, min = 0, max = Inf, step = NA),
+                                                  numericInput("dureerotation", uiDurationOfRotation, value=25, min = 0, max = Inf, step = NA),
+                                                  numericInput("nbchain", uiNumberOfSimulation, value=100, min = 0, max = Inf, step = NA),
+                                                  numericInput("dureesimulation", uiDurationOfSimulation, value=50, min = 0, max = Inf, step = NA),
+                                                  numericInput("delayAfterLogging", uiDurationOfDisturbanceAfterLogging, value=2, min = 0, max = Inf, step = NA),
+                                                  shinyjs::hidden(numericInput("delayDynamicsPostExploitation", uiDurationOfStimulationOfDynamicAfterLogging, value=8, min = 0, max = Inf, step = NA))
+                                                  
+                                                  
                                            )
                                          ),
                                          fluidRow(
                                            shinyjs::hidden(
                                              div(id="bloc_start_species_number",
                                                box(
-                                                 h5(strong("Effectifs de départ des espèces par classe de diamètre")),width = "100%",
+                                                 h5(strong(uiInitialNumberOfSpeciesByDiameterClass)),width = "100%",
                                                  tags$style(".shiny-file-input-progress {display: none}"),
                                                  fluidRow(
-                                                   column(width= 4,
-                                                      fileInput('file_data_start', "Importer à partir d'un fichier CSV", multiple = FALSE, accept = NULL, width = NULL,
-                                                                buttonLabel = "Browse...", placeholder = "No file selected")
-                                                   ),
-                                                   
                                                    column(width= 12,
                                                       fluidRow(
                                                         column(width= 7,
@@ -202,59 +207,153 @@ body <- dashboardBody(
                                                         )
                                                       )
                                                    ),
-                                                   
-                                                   column(width= 4,
-                                                      div(style="margin-top: 1em;",
-                                                          shinySaveButton("save_start_data", "Sauvegarder effectifs départ", "Save as ..", filetype = list(csv = "CSV", xlsx ="xlsx"), buttonType = "default"),
-                                                          tags$style(type='text/css', "#save_start_data { color:#000 !important;border-color:#979494 !important; font-weight: bold;}")
-                                                      )
-                                                   )
+                                                  shinyjs::hidden( 
+                                                     column(width= 4,  id="update_corresponding_data_perso_col",
+                                                        
+                                                        div(id="div_UpdateCDPerso", style="margin-top: 1em;",
+                                                            actionButton("update_corresponding_data_perso", uiUpdateCorrespondenceData, style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                            tags$style(type='text/css', "#update_corresponding_data_perso{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #update_corresponding_data_perso:hover { color:#000 !important;border-color:#979494 !important;}")
+                                                        ),
+                                                        shinyjs::hidden(div(id ='boxloader_UpdateCDPerso', width ="100px",
+                                                                            div(id="img_loader_UpdateCDPerso", img(src= "trait_loader.gif", width= "100px")),
+                                                                            tags$style(type='text/css', "#img_loader_UpdateCDPerso { text-align: center;}"),
+                                                                            div(id="load_UpdateCDPerso_encours", strong(paste0(uiUpdatingDataInProgress, " ...") )),
+                                                                            tags$style(type='text/css', "#load_UpdateCDPerso_encours {text-align: center;}")
+                                                          )
+                                                        )
+                                                     )
+                                                  )
                                                  )
                                                )
                                               )
                                             )
-                                         )
-                                     )
-                                   )
-                          ),
-                          tabPanel(h5(strong("Paramètres de l'exploitation")),
-                                   #rhandsontable pour les données d'exploitation
-                                   
-                                   
-                                   shinyjs::hidden(
-                                     div(id="bloc_parameters_logging",
-                                         fluidRow(
-                                           column(width= 12,
-                                                  textInput("tarifgenerique", "Tarif de cubage générique (en fonction du diamètre d)", value="", placeholder = "Exemple : 10^(-2.96+1.93*log10(d))"),
-                                                  tags$style(type='text/css', "#tarifgenerique { display: inline-block !important;}")
-                                                  
-                                           )),
-                                         fluidRow(
-                                           box(
-                                             h5(strong("Tableau des espèces à exploiter")),width = "100%",
-                                             rHandsontableOutput("data_logging", height = "50px")
-                                           )
-                                           
                                          ),
-                                         shinyjs::hidden(
-                                           br(),br(),
-                                           fluidRow(
-                                             column(width= 6,
-                                                    numericInput("anneereprisedyn", "Nombre d'année avant la reprise de la dynamique", value=1, min = NA, max = NA, step = NA)
+                                         fluidRow(
+                                           shinyjs::hidden(
+                                             div(id="bloc_corresponding_species",
+                                                 box(
+                                                   h5(strong(uiCorrespondenceMSAndSUToEstimateDynamicParameters)),width = "100%",
+                                                   fluidRow(
+                                                     column(width= 12,
+                                                            rHandsontableOutput("data_corresponding_species", height = "50px")
+                                                     ),
+                                                     column(width= 4,  id="update_corresponding_data_col",
+                                                          div(id="div_UpdateCD", style="margin-top: 1em;",
+                                                              actionButton("update_corresponding_data", uiUpdateCorrespondenceData, style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                              tags$style(type='text/css', "#update_corresponding_data{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #update_corresponding_data:hover { color:#000 !important;border-color:#979494 !important;}")
+                                                          ),
+                                                          shinyjs::hidden(div(id ='boxloader_UpdateCD', width ="100px",
+                                                                              div(id="img_loader_UpdateCD", img(src= "trait_loader.gif", width= "100px")),
+                                                                              tags$style(type='text/css', "#img_loader_UpdateCD { text-align: center;}"),
+                                                                              div(id="load_UpdateCD_encours", strong(paste0(uiUpdatingDataInProgress," ..."))),
+                                                                              tags$style(type='text/css', "#load_UpdateCD_encours {text-align: center;}")
+                                                          )
+                                                       )
+                                                     )
+                                                   )
+                                                 )
+                                             )
+                                           )
+                                         ),
+                                         fluidRow(
+                                           column(width = 12,
+                                                  shinyjs::hidden(div(id ='boxloader_FileDataStart', width ="100px",
+                                                                      div(id="img_loader_FileDataStart", img(src= "trait_loader.gif", width= "100px")),
+                                                                      tags$style(type='text/css', "#img_loader_FileDataStart { text-align: center;}"),
+                                                                      div(id="load_FileDataStart_encours", strong(paste0(uiLoadingFileInprogress," ..."))),
+                                                                      tags$style(type='text/css', "#load_FileDataStart_encours {text-align: center;}")
+                                                )
                                              )
                                              
                                            )
-                                         ),
-                                         
-                                         br(),br(),
-                                         
+                                        )
+                                     )
+                                   )
+                          ),
+                          tabPanel(h5(strong(uiLoggingParameters)),
+                                   shinyjs::hidden(
+                                     div(id="bloc_parameters_logging",
                                          fluidRow(
-                                           box(
-                                             h5(strong("Vecteur des dégâts post-exploitation par classe de diamètre (%)")), width = "100%",
-                                             rHandsontableOutput("vector_damage")
+                                           column(width=12, 
+                                              checkboxInput("simulate_logging", strong(uiRealizationOfLogging), TRUE)
                                            )
                                            
-                                         )
+                                         ),
+                                         div(id="simulate_logging_bloc",
+                                           fluidRow(
+                                             column(width= 8,
+                                                box(id = "data_logging_box",
+                                                    h5(strong(uiTableOfSpeciesToLogg)),width = "900px",
+                                                    rHandsontableOutput("data_logging", height = "50px")
+                                                )
+                                             ),
+                                             column(width= 4, id="tarifgenerique_col",
+                                                    textInput("tarifgenerique", uiGenericCubicRate, value="", placeholder = "Exemple : 10^(-2.96+1.93*log10(d))"),
+                                                    tags$style(type='text/css', "#tarifgenerique { display: inline-block !important;}")
+                                                    
+                                             )
+                                           ),
+                                           shinyjs::hidden(
+                                             br(),br(),
+                                             fluidRow(
+                                               column(width= 6,
+                                                      numericInput("anneereprisedyn", "Nombre d'année avant la reprise de la dynamique", value=1, min = NA, max = NA, step = NA)
+                                               )
+                                               
+                                             )
+                                           ),
+                                           
+                                           br(),br(),
+                                           
+                                           fluidRow(
+                                             column(width= 12,
+                                               box(
+                                                 h5(strong(uiVectorOfPostLoggingDamageByDiameterClass)), width = "100%",
+                                                 rHandsontableOutput("vector_damage")
+                                               )
+                                             )
+                                             
+                                           ),
+                                           br(),br(),
+                                           
+                                           fluidRow(
+                                             shinyjs::hidden(
+                                               column(width= 12, id="bloc_estimation_tcs_dimako",
+                                                      box(
+                                                        h5(strong(uiEstimateOfStockReconstitutionRateDimako)), width = "100%",
+                                                        
+                                                        fluidRow(
+                                                          column(width= 3,
+                                                                 numericInput("tauxaccroissement", uiGrowthRate, value=0.5, min = 0, max = Inf, step = NA)
+                                                          ),
+                                                          column(width= 3,
+                                                                 numericInput("tauxmortalite", uiMortalityRate, value=1, min = 0, max = Inf, step = NA)
+                                                          ),
+                                                          shinyjs::hidden(
+                                                            column(id="result_estimation_tcs", width = 12,
+                                                                   uiOutput("estimation_tcs_value")
+                                                            )
+                                                          ),
+                                                          column(width= 12,
+                                                                 div(id="div_estimate_tcs", style="margin-top: 1em;",
+                                                                     actionButton("estimate_tcs_btn", uiCalculateValue, style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                                     tags$style(type='text/css', "#estimate_tcs_btn{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #estimate_tcs_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                                                                 ),
+                                                                 shinyjs::hidden(div(id ='boxloader_estimate_tcs', width ="100px",
+                                                                                     div(id="img_loader_estimate_tcs", img(src= "trait_loader.gif", width= "100px")),
+                                                                                     tags$style(type='text/css', "#img_loader_estimate_tcs { text-align: center;}"),
+                                                                                     div(id="load_estimate_tcs_encours", strong(paste0(uiEstimateTCSInprogress, " ..."))),
+                                                                                     tags$style(type='text/css', "#load_estimate_tcs_encours {text-align: center;}")
+                                                                 )
+                                                                 )
+                                                          )
+                                                        )
+                                                      )
+                                               )
+                                             )
+                                             
+                                           )
+                                        )
                                      )
                                    )
                                    
@@ -279,7 +378,7 @@ body <- dashboardBody(
                       width = NULL,
                       fluidRow(
                         column(width= 12, 
-                               checkboxInput("saveFileSimOrNot", strong("Sauvegarder les données simulées dans un fichier spécifique"), FALSE),
+                               checkboxInput("saveFileSimOrNot", strong(uiSaveSimulatedDataInSpecificFile), FALSE),
                                tags$style(type='text/css', "#saveFileSimOrNot{font-weight: bold;} ")
                         )
                       )
@@ -295,12 +394,12 @@ body <- dashboardBody(
                                 div(style="display:inline-block",
                                     conditionalPanel(
                                       condition  = "input.saveFileSimOrNot == false",
-                                      actionButton("lancer_sim_without_save_file", "Lancer la simulation", style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                      actionButton("lancer_sim_without_save_file", uiStartSimulation, style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
                                       tags$style(type='text/css', "#lancer_sim_without_save_file{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #lancer_sim_without_save_file:hover { color:#000 !important;border-color:#979494 !important;}")
                                     ),
                                     conditionalPanel(
                                       condition  = "input.saveFileSimOrNot == true",
-                                      shinySaveButton("lancer_sim", "Lancer la simulation", "Save simulating data file as ..", filetype = list(RData = "RData"), buttonType = "blue"),
+                                      shinySaveButton("lancer_sim", uiStartSimulation, paste0(uiSaveAs, " ..."), filetype = list(RData = "RData"), buttonType = "blue"),
                                       tags$style(type='text/css', "#lancer_sim{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #lancer_sim:hover { color:#000 !important;border-color:#979494 !important;}")
                                     )
                                 ),
@@ -308,7 +407,7 @@ body <- dashboardBody(
                         #),
                         #column( id= "save_config_col" , width= 2, 
                                 div(style="display:inline-block",
-                                    shinySaveButton("save_config", "Sauvegarder le scénario", "Save as ..", filetype = list(RData = "RData"), buttonType = "default"),
+                                    shinySaveButton("save_config", uiSaveScenario, paste0(uiSaveAs, " ..."), filetype = list(RData = "RData"), buttonType = "default"),
                                   #actionButton("save_config", strong("Sauvegarder le scénario"), icon = icon('save'), style="color:#000 !important;border-color:#979494;")
                                   tags$style(type='text/css', "#save_config { color:#000 !important;border-color:#979494 !important; font-weight: bold;margin-right: 4px;}")
                                 ),
@@ -317,7 +416,7 @@ body <- dashboardBody(
                         #column( id= "load_config_col" , width= 2, 
                                 div(style="display:inline-block",
                                   #actionButton("load_config", strong("Charger un scénario"), icon = icon('hourglass-half'), style="color:#000 !important;border-color:#979494;")
-                                  shinyFilesButton('load_config', "Charger un scénario", 'Selectionner le fichier de scénario', multiple = FALSE),
+                                  shinyFilesButton('load_config', uiLoadScenario, uiSelectScenarioFile, multiple = FALSE),
                                   tags$style(type='text/css', "#load_config { color:#000 !important;border-color:#979494 !important; font-weight: bold;}")
                                 )
                                 
@@ -325,14 +424,14 @@ body <- dashboardBody(
                         shinyjs::hidden(column(id ='boxloader_FileConfig', width =12,
                                             div(id="img_loader_FileConfig", img(src= "trait_loader.gif", width= "100px")),
                                             tags$style(type='text/css', "#img_loader_FileConfig { text-align: center;}"),
-                                            div(id="load_FileConfig_encours", strong("Chargement du fichier en cours ...")),
+                                            div(id="load_FileConfig_encours", strong(paste0(uiLoadingFileInprogress, " ..."))),
                                             tags$style(type='text/css', "#load_FileConfig_encours {text-align: center;}")
                         )
                         #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
                         ),
                         shinyjs::hidden(column(id= "gotoparameters_col", width= 2,
                                                div(
-                                                 actionButton("gotoparameters", "Revenir aux paramètres", icon = icon("cog"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                 actionButton("gotoparameters", uiReturnToSettings, icon = icon("cog"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
                                                  tags$style(type='text/css', "#annuler { padding-left: 5%} #gotoparameters:hover { color:#000 !important;border-color:#979494 !important;}")
                                                )
                         ))
@@ -351,17 +450,17 @@ body <- dashboardBody(
                     br()
                 )
               ),
-              shinyFilesButton(id="load_sim_data",label="Charger le fichier des données simulées",title='Selectionner le fichier des données simulées', multiple = FALSE),
-              #fileInput("file1", "Choose CSV File",
+              shinyFilesButton(id="load_sim_data",label=uiLoadSimulatedDataFile, title=uiSelectAFile, multiple = FALSE),
+              # fileInput("file1", "Choose CSV File",
               #          accept = c(
               #            "text/csv",
               #            "text/comma-separated-values,text/plain",
               #            ".csv")
-              #),
+              # ),
               shinyjs::hidden(div(id ='boxloader_SimData', width ="100px",
                                   div(id="img_loader_SimData", img(src= "trait_loader.gif", width= "100px")),
                                   tags$style(type='text/css', "#img_loader_SimData { text-align: center;}"),
-                                  div(id="load_SimData_encours", strong("Chargement du fichier en cours ...")),
+                                  div(id="load_SimData_encours", strong(paste0(uiLoadingFileInprogress, " ..."))),
                                   tags$style(type='text/css', "#load_SimData_encours {text-align: center;}")
               )
               #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
@@ -375,23 +474,21 @@ body <- dashboardBody(
                   
                   column(width =  4,
                          selectInput(
-                           'indicateur', label = "Indicateur", choices = c("Stock exploitable", "Volume exploitable", "Nombre d’arbres", "Volume d'arbres", "Surface terrière", "Biomasse", "Taux de reconstitution du stock"), width = NULL
+                           'indicateur', label = uiIndicator, choices = c("Stock exploitable", "Volume exploitable", "Nombre d’arbres", "Volume d'arbres", "Surface terrière", "Biomasse", "Taux de reconstitution du stock"), width = NULL
                          )
                   )
                 ),
                 fluidRow(id="block_groupe_espece",
                          column(id="groupe_espece_indicateur_col", width =  4,
                                 selectizeInput(
-                                  'groupe_espece_indicateur', label = "Groupe d'espèces", multiple= TRUE, choices = c(221, 222, 223, 224, 225),
+                                  'groupe_espece_indicateur', label = uiSpeciesGroup, multiple= TRUE, choices = c(221, 222, 223, 224, 225),
                                   options = list(create = FALSE), width = NULL
                                 )
                          ),
                          
                          column(width =  4, id = "selectGEIAll_col",
-                                #fileInput('file_groupe_espece', 'sauvegarder une selection',
-                                #         accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv'))
                                 div(
-                                  checkboxInput("selectGEIAll", strong("Toutes les espèces"), value = FALSE, width = NULL)
+                                  checkboxInput("selectGEIAll", strong(uiAllSpecies), value = FALSE, width = NULL)
                                 )
                          ),
                          tags$style(type='text/css', "#selectGEIAll_col {padding-top:2%}")
@@ -400,43 +497,44 @@ body <- dashboardBody(
                 fluidRow(id="block_class_diam",
                          #useShinyjs(),
                          column(width =  2,
-                                radioButtons("plageClass", label = "Plage de diametre",
-                                             choices = list("cm" = 1, "classe" = 2), inline = TRUE)),
+                                radioButtons("plageClass", label = uiDiameterRange,
+                                             choices = listChoicesDiamRangeType, inline = TRUE)),
                          column(id="diamMinCol",  width =  2,
-                                numericInput("diamMin", "Diam Min", value=0, min = NA, max = NA, step = NA)
+                                numericInput("diamMin", uiMinimalDiameter, value=0, min = NA, max = NA, step = NA)
                          ),
                          column(id="diamMaxCol", width =  2,
-                                numericInput("diamMax", "Diam Max", value=0, min = NA, max = NA, step = NA)
+                                numericInput("diamMax", uiMaximalDiameter, value=0, min = NA, max = NA, step = NA)
                          ),
                          shinyjs::hidden(column(id="classMinCol",  width =  2,
-                                                numericInput("classMin", "Classe Min", value=0, min = NA, max = NA, step = NA)
+                                                numericInput("classMin", uiMinimalClass, value=0, min = NA, max = NA, step = NA)
                          )),
                          shinyjs::hidden(column(id="classMaxCol", width =  2,
-                                                numericInput("classMax", "Classe Max", value=0, min = NA, max = NA, step = NA)
+                                                numericInput("classMax", uiMaximalClass, value=0, min = NA, max = NA, step = NA)
                          ))
                 ),
                 fluidRow(
                   column(width = 12,
-                         sliderInput("yearrange_indicateur", label = "Plage d'années", min = 2010, 
-                                     max = 2030, value = c(2015, 2025), step=1, sep="")
+                         sliderInput("yearrange_indicateur", label = uiYearsRange, min = 2010, 
+                                     max = 2030, value = c(2015, 2025), step=1, sep=""),
+                         checkboxInput("verif_indicator", strong(uiValidationWithRealData), FALSE)
                   )
                 ),
                 fluidRow(
                   column(width =  2,
-                         actionButton("afficher_indicateur", strong("Visualiser"), icon = icon("eye"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;")),
+                         actionButton("afficher_indicateur", strong(uiVisualize), icon = icon("eye"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;")),
                   tags$style(type='text/css', "#afficher_indicateur:hover { color:#000 !important;border-color:#979494 !important;}")    
                 ),
                 shinyjs::hidden(div(id ='boxloader_IND', width ="100px",
                                     div(id="img_loader_IND", img(src= "trait_loader.gif", width= "100px")),
                                     tags$style(type='text/css', "#img_loader_IND { text-align: center;}"),
-                                    div(id="load_IND_encours", strong("Traitement en cours ...")),
+                                    div(id="load_IND_encours", strong(paste0(uiOngoingTreatment, " ..."))),
                                     tags$style(type='text/css', "#load_IND_encours {text-align: center;}")
                 )
                 #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
                 )
             ),
             tabBox( width = NULL,
-                    tabPanel(h5(strong("Représentation graphique")),
+                    tabPanel(h5(strong(uiGraphicRepresentation)),
                              shinyjs::hidden(fluidRow(id = "bloc_graphique_Indicateur",
                                box(width = 12, 
                                    shinyjs::hidden(fluidRow(id = "bloc_export_indicateur_rg",
@@ -446,7 +544,7 @@ body <- dashboardBody(
                                             )
                                      ),
                                      column(width =2,
-                                            downloadButton('download_indic_rg', strong('Exporter')),
+                                            downloadButton('download_indic_rg', strong(uiExport)),
                                             tags$style(type='text/css', "#download_indic_rg { color:#000 !important;border-color:#979494 !important;}")
                                      )
                                    )),
@@ -455,7 +553,7 @@ body <- dashboardBody(
                                    status = "primary")
                              ))
                     ),
-                    tabPanel(h5(strong("Données")),
+                    tabPanel(h5(strong(uiData)),
                              shinyjs::hidden(
                                div(id = "bloc_donnees_Indicateur",
                                    shinyjs::hidden(fluidRow(id = "bloc_export_indicateur_data",
@@ -465,7 +563,7 @@ body <- dashboardBody(
                                                                    )
                                                             ),
                                                             column(width =2,
-                                                                   downloadButton('download_indic_data', strong("Exporter")),
+                                                                   downloadButton('download_indic_data', strong(uiExport)),
                                                                    tags$style(type='text/css', "#download_indic_data { color:#000 !important;border-color:#979494 !important;}")
                                                             )
                                    )),
@@ -489,30 +587,33 @@ body <- dashboardBody(
               fluidRow(
                 column(id="groupe_espece_strDia_col", width = 4, 
                        selectizeInput(
-                         'groupe_espece_strDia', label = "Groupe d'espèces", multiple= TRUE, choices = c(221, 222, 223, 224, 225),
+                         'groupe_espece_strDia', label = uiSpeciesGroup, multiple= TRUE, choices = c(221, 222, 223, 224, 225),
                          options = list(create = FALSE), width = NULL
                        )
                 ),
                 column(width =  4, id= "selectGESDAll_col",
-                       checkboxInput("selectGESDAll", strong("Toutes les espèces"), value = FALSE, width = NULL)
+                       checkboxInput("selectGESDAll", strong(uiAllSpecies), value = FALSE, width = NULL)
                 ),
                 tags$style(type='text/css', "#selectGESDAll_col {padding-top:2%}")
               ),
               fluidRow(
                 column(width =  6,
-                       radioButtons("whatSD", label = "Type de structure diamétrique",
-                                    choices = list("Cumulé" = 1, "Repartition par classe" = 2), inline = TRUE)
+                       radioButtons("whatSD", label = uiDiametricStructureType,
+                                    choices = listChoicesSDType, inline = TRUE)
                 )
               ),
               shinyjs::hidden(fluidRow(id="slider_SD",
                                        column(width =12  ,
-                                              sliderInput("yearslider_strDiam", label = "Année", min = 2010, 
+                                              sliderInput("yearslider_strDiam", label = uiYear, min = 2010, 
                                                           max = 2030, value =  2025, step=1, sep="")
                                        )
               )), 
               fluidRow(
+                # column(width =12  ,
+                #        checkboxInput("verif_SD", strong("Validation avec les vraies données"), FALSE)
+                # ),
                 column(width = 4, 
-                       actionButton("plot_SCD", strong("Visualiser"), icon = icon('eye'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                       actionButton("plot_SCD", strong(uiVisualize), icon = icon('eye'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
                        tags$style(type='text/css', "#plot_SCD:hover { color:#000 !important;border-color:#979494 !important;}")
                 )
                 
@@ -520,13 +621,13 @@ body <- dashboardBody(
               shinyjs::hidden(div(id ='boxloader_SCD', width ="100px",
                                   div(id="img_loader_SCD", img(src= "trait_loader.gif", width= "100px")),
                                   tags$style(type='text/css', "#img_loader_SCD { text-align: center;}"),
-                                  div(id="load_SCD_encours", strong("Traitement en cours ...")),
+                                  div(id="load_SCD_encours", strong(paste0(uiOngoingTreatment, " ..."))),
                                   tags$style(type='text/css', "#load_SCD_encours {text-align: center;}")
               )
               )
             ),
             tabBox( width = NULL,
-                    tabPanel(h5(strong("Représentation graphique")), 
+                    tabPanel(h5(strong(uiGraphicRepresentation)), 
                              shinyjs::hidden(fluidRow(id = "bloc_graphique_SCD",
                                box(width = 12, 
                                    shinyjs::hidden(fluidRow(id= "bloc_export_sd_rg",
@@ -536,7 +637,7 @@ body <- dashboardBody(
                                             )
                                      ),
                                      column(width =2,
-                                            downloadButton('download_strucDiam_rg', strong("Exporter")),
+                                            downloadButton('download_strucDiam_rg', strong(uiExport)),
                                             tags$style(type='text/css', "#download_strucDiam_rg { color:#000 !important;border-color:#979494 !important;}")
                                      )
                                    )),
@@ -544,7 +645,7 @@ body <- dashboardBody(
                                    status = "primary")
                              ))
                     ),
-                    tabPanel(h5(strong("Données")),
+                    tabPanel(h5(strong(uiData)),
                              shinyjs::hidden(
                                div(id = "bloc_donnees_SCD",
                                    shinyjs::hidden(fluidRow(id = "bloc_export_sd_data",
@@ -554,7 +655,7 @@ body <- dashboardBody(
                                                                    )
                                                             ),
                                                             column(width =2,
-                                                                   downloadButton('download_strucDiam_data', strong("Exporter")),
+                                                                   downloadButton('download_strucDiam_data', strong(uiExport)),
                                                                    tags$style(type='text/css', "#download_strucDiam_data { color:#000 !important;border-color:#979494 !important;}")
                                                             )
                                    )),
@@ -571,96 +672,88 @@ body <- dashboardBody(
             )
             
     ),
-    tabItem(tabName = "parametres",
-            box(width = "100%",
-                fluidRow(
-                  column(width =  6,
-                         radioButtons("action_indicateur", label = NULL,
-                                      choices = list("Nouvel indicateur" = 1, "MAJ indicateur existant" = 2), inline = TRUE)
-                  )
-                ),
-                shinyjs::hidden(
-                  div(id="update_indicateur",
-                      fluidRow(
-                        column(width= 4,
-                               selectInput(
-                                 'nom_indicateur_update', label = "Nom de l'indicateur", choices = c(), width = NULL
-                               )
-                               
-                        )), 
-                      fluidRow(
-                        column(width= 8,
-                               helpText(strong("Expression mathématique")),
-                               aceEditor("fonction_indicateur_update", mode="r", theme="chrome", vimKeyBinding = FALSE,
-                                         readOnly = FALSE, height = "200px", fontSize = 12, debounce = 1000,
-                                         wordWrap = FALSE, showLineNumbers = TRUE, highlightActiveLine = TRUE,
-                                         selectionId = NULL, cursorId = NULL, hotkeys = NULL,
-                                         autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
-                        )
-                      ),
-                      br(),
-                      fluidRow(id ="action_update_delete_IND",
-                        column(width= 4, 
-                               div(style="display:inline-block",
-                                 actionButton("update_indicateur_btn", strong("Modifier"), icon = icon('edit'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
-                                 tags$style(type='text/css', "#update_indicateur_btn:hover { color:#000 !important;border-color:#979494 !important;}")
-                               ),
-                               div(style="display:inline-block",
-                                 actionButton("delete_indicateur_btn", strong("Supprimer"), icon = icon('trash'), style="color: #fff; background-color: red; border-color: red;"),
-                                 tags$style(type='text/css', "#delete_indicateur_btn:hover { color:#000 !important;border-color:#979494 !important;}")
-                               )
-                               
-                        )
-                      ),
-                      shinyjs::hidden(div(id ='boxloader_update_IND', width ="100px",
-                                          div(id="img_loader_update_IND", img(src= "trait_loader.gif", width= "100px")),
-                                          tags$style(type='text/css', "#img_loader_update_IND { text-align: center;}"),
-                                          div(id="load_update_IND_encours", strong("Mise à jour en cours ...")),
-                                          tags$style(type='text/css', "#load_update_IND_encours {text-align: center;}")
-                      )
-                      #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
-                      )
-                  )
-                ),
-                div(id="new_indicateur",
-                    fluidRow(
-                      column(width= 4,
-                             textInput("nom_indicateur_new", "Nom de l'indicateur", value="", placeholder = "Nom de l'indicateur")
-                             #textInput("nom_fonction_new", "Nom de la fonction", value="", placeholder = "Nom de la fonction")
-                             #textInput("variable_indicateur_new", "Nom de la variable", value="", placeholder = "Nom de la variable")
-                      )
+    tabItem(tabName = "gestionindicateurs",
+            tabBox( width = NULL,
+                    tabPanel(h5(strong(uiAddIndicator)),
+                             div(id="new_indicateur",
+                                 fluidRow(
+                                   column(width= 4,
+                                          textInput("nom_indicateur_new", uiNameOfIndicator, value="", placeholder = uiNameOfIndicator)
+                                   )
+                                 ),
+                                 fluidRow(
+                                   column(width= 8,
+                                          helpText(strong(uiMathematicalExpression)),
+                                          aceEditor("fonction_indicateur_new", mode="r", theme="chrome", vimKeyBinding = FALSE,
+                                                    readOnly = FALSE, height = "200px", fontSize = 12, debounce = 1000,
+                                                    wordWrap = FALSE, showLineNumbers = TRUE, highlightActiveLine = TRUE,
+                                                    selectionId = NULL, cursorId = NULL, hotkeys = NULL,
+                                                    autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
+                                   )
+                                 ),
+                                 br(),
+                                 fluidRow(id="action_add_IND",
+                                          column(width= 2, 
+                                                 div(
+                                                   actionButton("ajout_indicateur_btn", strong(uiAdd), icon = icon('plus'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                   tags$style(type='text/css', "#ajout_indicateur_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                                                 )
+                                                 
+                                          )
+                                 ),
+                                 shinyjs::hidden(div(id ='boxloader_add_IND', width ="100px",
+                                                     div(id="img_loader_add_IND", img(src= "trait_loader.gif", width= "100px")),
+                                                     tags$style(type='text/css', "#img_loader_add_IND { text-align: center;}"),
+                                                     div(id="load_add_IND_encours", strong(paste0(uiSavingInProgress, " ..."))),
+                                                     tags$style(type='text/css', "#load_add_IND_encours {text-align: center;}")
+                                 )
+                                 
+                                 )    
+                             )
                     ),
-                    fluidRow(
-                      column(width= 8,
-                             helpText(strong("Expression mathématique")),
-                             aceEditor("fonction_indicateur_new", mode="r", theme="chrome", vimKeyBinding = FALSE,
-                                       readOnly = FALSE, height = "200px", fontSize = 12, debounce = 1000,
-                                       wordWrap = FALSE, showLineNumbers = TRUE, highlightActiveLine = TRUE,
-                                       selectionId = NULL, cursorId = NULL, hotkeys = NULL,
-                                       autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
-                             #tags$textarea(id="fonction_indicateur_new", rows=6, cols=80)
-                             #textInput("fonction_indicateur_new", "Expression mathématique", value="", placeholder = "Nom de la fonction")
-                      )
-                    ),
-                    br(),
-                    fluidRow(id="action_add_IND",
-                      column(width= 2, 
-                             div(
-                               actionButton("ajout_indicateur_btn", strong("Ajouter"), icon = icon('plus'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
-                               tags$style(type='text/css', "#ajout_indicateur_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                    tabPanel(h5(strong(uiUpdateAndDeleteIndicator)),
+                             div(id="update_indicateur",
+                                 fluidRow(
+                                   column(width= 4,
+                                          selectInput(
+                                            'nom_indicateur_update', label = uiIndicator, choices = c(), width = NULL
+                                          )
+                                          
+                                   )), 
+                                 fluidRow(
+                                   column(width= 8,
+                                          helpText(strong(uiMathematicalExpression)),
+                                          aceEditor("fonction_indicateur_update", mode="r", theme="chrome", vimKeyBinding = FALSE,
+                                                    readOnly = FALSE, height = "200px", fontSize = 12, debounce = 1000,
+                                                    wordWrap = FALSE, showLineNumbers = TRUE, highlightActiveLine = TRUE,
+                                                    selectionId = NULL, cursorId = NULL, hotkeys = NULL,
+                                                    autoComplete = c("disabled", "enabled", "live"), autoCompleteList = NULL)
+                                   )
+                                 ),
+                                 br(),
+                                 fluidRow(id ="action_update_delete_IND",
+                                          column(width= 4, 
+                                                 div(style="display:inline-block",
+                                                     actionButton("update_indicateur_btn", strong(uiUpdate), icon = icon('edit'), style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                                     tags$style(type='text/css', "#update_indicateur_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                                                 ),
+                                                 div(style="display:inline-block",
+                                                     actionButton("delete_indicateur_btn", strong(uiDelete), icon = icon('trash'), style="color: #fff; background-color: red; border-color: red;"),
+                                                     tags$style(type='text/css', "#delete_indicateur_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                                                 )
+                                                 
+                                          )
+                                 ),
+                                 shinyjs::hidden(div(id ='boxloader_update_IND', width ="100px",
+                                                     div(id="img_loader_update_IND", img(src= "trait_loader.gif", width= "100px")),
+                                                     tags$style(type='text/css', "#img_loader_update_IND { text-align: center;}"),
+                                                     div(id="load_update_IND_encours", strong(paste0(uiUpdatingInProgress," ..."))),
+                                                     tags$style(type='text/css', "#load_update_IND_encours {text-align: center;}")
+                                 )
+                                 )
                              )
                              
-                      )
-                    ),
-                    shinyjs::hidden(div(id ='boxloader_add_IND', width ="100px",
-                            div(id="img_loader_add_IND", img(src= "trait_loader.gif", width= "100px")),
-                            tags$style(type='text/css', "#img_loader_add_IND { text-align: center;}"),
-                            div(id="load_add_IND_encours", strong("Enregistrement en cours ...")),
-                            tags$style(type='text/css', "#load_add_IND_encours {text-align: center;}")
                     )
-                    
-                    )    
-                )
             )
     ),
     tabItem(tabName = "aide",

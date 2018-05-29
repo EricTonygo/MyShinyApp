@@ -87,7 +87,7 @@ attr(T1.MBaiki,"DelayAfterLogging")=1
 ########################
 
 T2.MBaiki <- function(EffectifsT2,intensity.matrix){
-  intensity.matrix[ClassesDiam>=50,as.numeric(ListeIdspLogging)>=400]=0
+  #intensity.matrix[ClassesDiam>=50,as.numeric(ListeNomspLogging)>=400]=0
   EffectifsT2=matrix(rbinom(prod(dim(EffectifsT2)),EffectifsT2,prob=intensity.matrix),nrow=nrow(EffectifsT2))
   return(EffectifsT2)
 }

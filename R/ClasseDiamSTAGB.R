@@ -1,6 +1,5 @@
 ClasseDiamSTAGB<-function(ParamsDyn=NULL,ParamSim=NULL,alpha=NULL, OtherIndicator=NULL){
 # Calcul des indicateurs utiles pour plot.FCM
-#browser()
 ClassesDiam = ParamsDyn$ClassesDiam
 NbClasse=length(ClassesDiam)  
 ClasseDiam2=c(ClassesDiam,Inf)
@@ -8,7 +7,7 @@ SpeciesTraits = ParamSim$MySpeciesTraits
 
 if (is.null(alpha)){
   if(tolower(ParamsDyn$DataType) == "parcelle"){
-    Effectifs=tapply(DataDepart$ClassesDiam,DataDepart$Id.sp,function(x) as.numeric(table(x)),simplify=F)
+    Effectifs=tapply(DataDepart$ClassesDiam,DataDepart$Nom.sp,function(x) as.numeric(table(x)),simplify=F)
     DataStart[[p]]=sapply(Effectifs,function(x) if(is.null(x)) rep(0,NbClasse) else x)
     EffectifsTotaux=apply(DataStart[[p]],1,sum)+EffectifsTotaux
   }else if(tolower(ParamsDyn$DataType) == 'sentier'){
@@ -51,16 +50,19 @@ StrVolume = paste0("Volume<-function(d){
 }")
 eval(parse(text = StrVolume))
 
+Nom.sp = as.character(SpeciesTraits$Nom.sp)
 Id.sp = as.character(SpeciesTraits$Id.sp)
+Nb_Nom.sp = length(Nom.sp)
 Nb_Id.sp = length(Id.sp)
 tarifsCubage= SpeciesTraits$tarifs
 ClasseDiamDME = findInterval(SpeciesTraits$DME[1], ClassesDiam)
+Col_Nom.sp =rep(0, Nb_Nom.sp*NbClasse)
 Col_Id.sp =rep(0, Nb_Id.sp*NbClasse)
-Col_ClasseDiam = rep(0, Nb_Id.sp*NbClasse)
-ST= rep(0, Nb_Id.sp*NbClasse)
-Biomass = rep(0, Nb_Id.sp*NbClasse)
-Vol= rep(0, Nb_Id.sp*NbClasse)
-for (j in 1: Nb_Id.sp) {
+Col_ClasseDiam = rep(0, Nb_Nom.sp*NbClasse)
+ST= rep(0, Nb_Nom.sp*NbClasse)
+Biomass = rep(0, Nb_Nom.sp*NbClasse)
+Vol= rep(0, Nb_Nom.sp*NbClasse)
+for (j in 1: Nb_Nom.sp) {
   ExpEVal = paste0("FunctionTarif= function(d){
     return(", tarifsCubage[j] ,") }")
   eval(parse(text = ExpEVal))
@@ -68,6 +70,7 @@ for (j in 1: Nb_Id.sp) {
   for (i in 1:NbClasse){
     indice = (j-1)*NbClasse +i
     #print(indice)
+    Col_Nom.sp[indice] = Nom.sp[j]
     Col_Id.sp[indice] = Id.sp[j]
     Col_ClasseDiam[indice] =  i
     tmp=integrate(function(x) alpha*SurfT(x)*exp(-alpha*x)/(exp(-alpha*ClasseDiam2[i])-exp(-alpha*ClasseDiam2[i+1])),ClasseDiam2[i],ClasseDiam2[i+1])
@@ -92,15 +95,15 @@ ST=ST/10000
 Biomass=Biomass/1000    
 
 
-ExpReturn = "DataOutputs=data.frame(Id.sp = as.factor(Col_Id.sp), ClassesDiam = as.factor(Col_ClasseDiam), Eff=Eff, ST= ST, AGB=Biomass, Vol=Vol"
+ExpReturn = "DataOutputs=data.frame(Id.sp = as.factor(Col_Id.sp), Nom.sp = as.factor(Col_Nom.sp), ClassesDiam = as.factor(Col_ClasseDiam), Eff=Eff, ST= ST, AGB=Biomass, Vol=Vol"
 if(is.list(OtherIndicator)){
   for(i in 1:length(OtherIndicator)){
     indicator = OtherIndicator[[i]]
-    Initial = paste0(indicator$VarInd, "= rep(0,NbClasse*Nb_Id.sp)",collapse='')
+    Initial = paste0(indicator$VarInd, "= rep(0,NbClasse*Nb_Nom.sp)",collapse='')
     eval(parse(text = Initial))
     Function = paste0(indicator$NomFunc, "<-", indicator$Func,collapse='')
     eval(parse(text = Function))
-    ExpTmp=paste0("for (j in 1: Nb_Id.sp) {for (i in 1:NbClasse){indice = (j-1)*NbClasse +i; tmp = integrate(function(x) alpha*",indicator$NomFunc,"(x)*exp(-alpha*x)/(exp(-alpha*ClasseDiam2[i])-exp(-alpha*ClasseDiam2[i+1])),ClasseDiam2[i],ClasseDiam2[i+1]); ", indicator$VarInd,"[indice] = tmp$value}}" ,collapse='')
+    ExpTmp=paste0("for (j in 1: Nb_Nom.sp) {for (i in 1:NbClasse){indice = (j-1)*NbClasse +i; tmp = integrate(function(x) alpha*",indicator$NomFunc,"(x)*exp(-alpha*x)/(exp(-alpha*ClasseDiam2[i])-exp(-alpha*ClasseDiam2[i+1])),ClasseDiam2[i],ClasseDiam2[i+1]); ", indicator$VarInd,"[indice] = tmp$value}}" ,collapse='')
     eval(parse(text = ExpTmp))
     ExpReturn = paste0(ExpReturn, ", ", indicator$VarInd, "=", indicator$VarInd, collapse = '')
   }
