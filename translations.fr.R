@@ -1,4 +1,5 @@
 uiMitHome = "Accueil"
+uiMitInference = "Inférence"
 uiMitSimulation = "Simulation"
 uiMitVizualisation = "Visualisation"
 uiMitDataSimulation = "Données de simulation"

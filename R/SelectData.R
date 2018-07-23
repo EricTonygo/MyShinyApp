@@ -36,8 +36,8 @@ SimData$Id.sp=as.factor(SimData$Id.sp)
 
 SimData=subset(SimData,Diam>0)
  
-colnames(TraitData)[6]="Nom.sp"  
-TraitData=subset(TraitData,Id.sp%in%unique(SimData$Id.sp),select=c("Id.sp","WSG","DME","Nom.sp"))
+# colnames(TraitData)[6]="Nom.sp"  
+TraitData=subset(TraitData,Id.sp%in%unique(SimData$Id.sp),select=c("Id.sp", "Nom.sp","DME","WSG"))
 
 TraitData$Id.sp=as.factor(TraitData$Id.sp)
 TraitData$Nom.sp=TraitData$Nom.sp[,drop=T]

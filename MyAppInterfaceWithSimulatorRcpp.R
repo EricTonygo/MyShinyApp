@@ -362,7 +362,7 @@ FCMplot<-function(ParamSim,Effectifs,SpeciesTraits,out.InferFCM,LoggingFunction,
   
   # Initialisation variables de sortie
   
-  RecEffectifsTmp=matrix(0,ncol=5,nrow=NbObsParIter*(Fin.simu+1))
+  RecEffectifsTmp=matrix("0",ncol=5,nrow=NbObsParIter*(Fin.simu+1))
   
   
   RecEffectifs=cbind(as.vector(Effectifs),RepListeNomsp,RepClasseDiam,0,0)
@@ -380,62 +380,66 @@ FCMplot<-function(ParamSim,Effectifs,SpeciesTraits,out.InferFCM,LoggingFunction,
   SimRecrut=ExtractDynDataForSimulation(SimRecrut, Effectifs)                                     
   SimGrowth=ExtractDynDataForSimulation(SimGrowth, Effectifs)
   SimMort=ExtractDynDataForSimulation(SimMort, Effectifs)
+  # boucles des simulation
+  # for (k in 1:nbchain){
+  #   
+  #   Eff.cur=Effectifs
+  #   compteur=1:NbObsParIter
+  #   DAL=DelayAfterLogging
+  #   
+  #   for (j in 0:Fin.simu){
+  #     
+  #     DAL=DAL-1
+  #     
+  #     # Mortality
+  #     Mort=MortalityModel(Eff.cur,SimMort,Surface)  
+  #     
+  #     
+  #     # Recrutement + growth
+  #     if (DAL<0){
+  #       In=RecruitmentModel(Eff.cur,SimRecrut,Surface)
+  #       Monte=GrowthModel(Eff.cur,Mort,SimGrowth,Surface)
+  #       
+  #       # Update Eff.cur
+  #       
+  #       M1=rbind(In,Monte)
+  #       M2=rbind(Monte,0)+Mort
+  #       Eff.cur=Eff.cur+M1-M2
+  #     }else{
+  #       Eff.cur=Eff.cur-Mort
+  #     }
+  # 
+  #     # Exploitations
+  #     
+  #     
+  #     if (j%in%Exploitations){ 
+  #       DAL=DelayAfterLogging
+  #       Eff.cur=LoggingFunction(Eff.cur,intensity.matrix)
+  #       colnames(Eff.cur)=colnames(Effectifs)
+  #     }
+  #     
+  #     # Stockage des Trajectoires
+  #     
+  #     RecEffectifsTmp[compteur,]=cbind(as.vector(Eff.cur),RepListeNomsp,RepClasseDiam,j+1,k)
+  #     
+  #     compteur=compteur+NbObsParIter
+  #     
+  #     
+  #     
+  #   }  # Fin boucle du j, trajectoire d'effectifs
+  #   
+  #   RecEffectifs=rbind(RecEffectifs,RecEffectifsTmp[RecEffectifsTmp[,1]>0,])
+  #   
+  # } # Fin boucle du k, r?p?tition MC
   browser()
   start_time <- Sys.time()
-  # boucles des simulation
-  for (k in 1:nbchain){
-    
-    Eff.cur=Effectifs
-    compteur=1:NbObsParIter
-    DAL=DelayAfterLogging
-    
-    for (j in 0:Fin.simu){
-      
-      DAL=DAL-1
-      
-      # Mortality
-      Mort=MortalityModel(Eff.cur,SimMort,Surface)  
-
-      # Recrutement + growth
-      if (DAL<0){
-        In=RecruitmentModel(Eff.cur,SimRecrut,Surface)
-        Monte=GrowthModel(Eff.cur,Mort,SimGrowth,Surface)
-        
-        # Update Eff.cur
-        
-        M1=rbind(In,Monte)
-        M2=rbind(Monte,0)+Mort
-        Eff.cur=Eff.cur+M1-M2
-      }else{
-        Eff.cur=Eff.cur-Mort
-      }
-
-      # Exploitations
-      
-      
-      if (j%in%Exploitations){ 
-        DAL=DelayAfterLogging
-        Eff.cur=LoggingFunction(Eff.cur,intensity.matrix)
-        colnames(Eff.cur)=colnames(Effectifs)
-      }
-      
-      # Stockage des Trajectoires
-      
-      RecEffectifsTmp[compteur,]=cbind(as.vector(Eff.cur),RepListeNomsp,RepClasseDiam,j+1,k)
-      browser()
-      compteur=compteur+NbObsParIter
-      browser()
-      
-      
-    }  # Fin boucle du j, trajectoire d'effectifs
-    
-    RecEffectifs=rbind(RecEffectifs,RecEffectifsTmp[RecEffectifsTmp[,1]>0,])
-    
-  } # Fin boucle du k, r?p?tition MC
+  test = doMySimulationLoop(nbchain, Fin.simu, NbObsParIter, Effectifs, DelayAfterLogging, Exploitations,
+                                     RecruitmentModel, MortalityModel, GrowthModel, LoggingFunction, SimMort, 
+                                     RepListeNomsp, SimRecrut, SimGrowth, Surface, intensity.matrix, 
+                                     RepClasseDiam,  RecEffectifsTmp, RecEffectifs)
   end_time <- Sys.time()
   print(end_time - start_time)
   browser()
-  
   
   
   colnames(RecEffectifs)=c("Effectifs","Nom.sp","ClasseDiam","Temps","iter")

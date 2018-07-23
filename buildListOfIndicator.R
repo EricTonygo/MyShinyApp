@@ -25,7 +25,7 @@ buildListIndicator<-function(){
   tmp = list(list(NomInd=uiUsableStock, NomFunc= "EffectifExp", VarInd="Eff"))
   listeIndicateur = append(listeIndicateur, tmp)
   #Taux de reconstitution du stock
-  tmp = list(list(NomInd=uiIventoryReplishmentRate, NomFunc= "TauxReconstition", VarInd="Eff"))
+  tmp = list(list(NomInd=uiIventoryReplishmentRate, NomFunc= "TauxReconstitution", VarInd="Eff"))
   listeIndicateur = append(listeIndicateur, tmp)
   return(listeIndicateur)
 }

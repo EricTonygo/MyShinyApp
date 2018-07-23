@@ -10,6 +10,7 @@ library(data.table)
 library(flexmix)
 library(ggplot2)
 library(DT)
+library(Rcpp)
 assign("DataFolder",  paste0(normalizePath(path="~"), "\\DafSim"), envir = .GlobalEnv)
 assign("ParamsDynFile",  "", envir = .GlobalEnv)
 assign("CurrentResultSimDataFile", "", envir = .GlobalEnv)
@@ -25,7 +26,8 @@ source("R/ClasseDiamSTAGB.R")
 source("MyAppInterfaceWithSimulator.R")
 source("algoExtractIndicator.R")
 source("buildListOfIndicator.R",local=T, encoding = 'UTF-8')
-
+# sourceCpp("simulation.cpp")
+options(shiny.maxRequestSize=10000*1024^2)
 dir.exists <- function(d) {
   de <- file.info(d)$isdir
   ifelse(is.na(de), FALSE, de)
@@ -487,6 +489,140 @@ shinyServer(function(input, output, session){
     
   })
   
+  ################################ Uploading file data campagnes ##############################
+  uploadFileDataCampagnes <- reactive({
+    inFile <- input$file_data_campagnes
+    if (!is.null(inFile)){
+      read.csv2(inFile$datapath)
+    }else{
+      return(NULL)
+    }
+  })
+  
+  observeEvent(input$file_data_campagnes, {
+    tryCatch({
+      shinyjs::hide('bloc_table_data_campagnes')
+      shinyjs::hide('bloc_table_parcelles_campagnes_selected')
+      shinyjs::hide('bloc_table_species_traits')
+      shinyjs::show('boxloader_FileDataCampagnes')
+      dataCampagnes = uploadFileDataCampagnes()
+      colHeaders = names(dataCampagnes)
+      output$table_data_campagnes <-rhandsontable::renderRHandsontable({
+        rhandsontable::rhandsontable(dataCampagnes, colHeaders = colHeaders, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
+          hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+          hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+          hot_col(col = 2:length(colHeaders), halign = "htCenter")
+      })
+      ListeCampagnes=sort(unique(dataCampagnes$Id.campagne0))
+      ListeParcelles=unique(dataCampagnes$Id.zone)
+      TableParcellesCampagnesSelected = matrix(data = rep(TRUE, length(ListeParcelles)*length(ListeCampagnes)), nrow = length(ListeParcelles), ncol = length(ListeCampagnes), dimnames = list(ListeParcelles, ListeCampagnes))
+      output$table_parcelles_campagnes_selected <-rhandsontable::renderRHandsontable({
+        rhandsontable::rhandsontable(TableParcellesCampagnesSelected, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
+          hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+          hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+           hot_col(col = 1:ncol(TableParcellesCampagnesSelected), halign = "htCenter")
+      })
+      SpeciesTraitsInferTmp = dataCampagnes[c("Id.sp", "Nom.sp")]
+      SpeciesTraitsInfer= SpeciesTraitsInferTmp[!duplicated(SpeciesTraitsInferTmp[, 1]),]
+      SpeciesTraitsInfer = data.frame(SpeciesTraitsInfer[order(SpeciesTraitsInfer$Id.sp),], DME=80, WSG="", stringsAsFactors = F)
+      SpeciesTraitsInfer$Nom.sp = as.character(SpeciesTraitsInfer$Nom.sp)
+      row.names(SpeciesTraitsInfer) <- c(1:length(SpeciesTraitsInfer$Id.sp))
+      colHeaders2 = names(SpeciesTraitsInfer)
+      output$table_species_traits <-rhandsontable::renderRHandsontable({
+        rhandsontable::rhandsontable(SpeciesTraitsInfer, colHeaders = colHeaders2, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
+          hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+          hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+          hot_col(col = 1:length(colHeaders2), halign = "htCenter")
+      })
+      shinyjs::hide('boxloader_FileDataCampagnes')
+      shinyjs::show('bloc_table_data_campagnes')
+      shinyjs::show('bloc_table_parcelles_campagnes_selected')
+      shinyjs::show('bloc_table_species_traits')
+    }, error= function(e){
+      shinyjs::hide('boxloader_FileDataCampagnes')
+      shinyjs::show('bloc_table_data_campagnes')
+      showModal(modalDialog(
+        title=uiError,
+        size = "m",
+        footer = modalButton(uiClose),
+        e$message
+      )
+      )
+    })
+  })
+  ################################ Uploading file data campagnes ##############################
+  uploadFileSpeciesTraits <- reactive({
+    inFile <- input$file_species_traits
+    if (!is.null(inFile)){
+      read.csv2(inFile$datapath)
+    }else{
+      return(NULL)
+    }
+  })
+  
+  
+  observeEvent(input$file_species_traits, {
+    tryCatch({
+      shinyjs::hide('bloc_table_species_traits')
+      SpeciesTraitsInfer = uploadFileSpeciesTraits()
+      colHeaders = names(SpeciesTraitsInfer)
+      output$table_species_traits <-rhandsontable::renderRHandsontable({
+        rhandsontable::rhandsontable(SpeciesTraitsInfer, colHeaders = colHeaders, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
+          hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+          hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+          hot_col(col = 1:length(colHeaders), halign = "htCenter")
+      })
+      shinyjs::show('bloc_table_species_traits')
+    }, error= function(e){
+      shinyjs::show('bloc_table_species_traits')
+      showModal(modalDialog(
+        title=uiError,
+        size = "m",
+        footer = modalButton(uiClose),
+        e$message
+      )
+      )
+    })
+  })
+  
+  
+  
+  
+  
+  ################################ Calculate dynamic parameters ##############################
+  observeEvent(input$calculate_param_dyn_btn, {
+    tryCatch({
+      DataCampagnesFormatted = hot_to_r(input$table_data_campagnes)
+      names(DataCampagnesFormatted) <- c("Id.zone", "Id.sp", "Nom.sp", "Diam0", "Diam1", "Id.campagne0", "Id.campagne1", "Surface.zone")
+      DataCampagnesFormatted$Id.zone = as.character(DataCampagnesFormatted$Id.zone)
+      DataCampagnesFormatted$Id.sp = as.factor(DataCampagnesFormatted$Id.sp)
+      DataCampagnesFormatted$Nom.sp = as.factor(DataCampagnesFormatted$Nom.sp)
+      DataCampagnesFormatted$Diam0 = as.numeric(DataCampagnesFormatted$Diam0)
+      DataCampagnesFormatted$Diam1 = as.numeric(DataCampagnesFormatted$Diam1)
+      DataCampagnesFormatted$Id.campagne0 = as.numeric(DataCampagnesFormatted$Id.campagne0)
+      DataCampagnesFormatted$Id.campagne1 = as.numeric(DataCampagnesFormatted$Id.campagne1)
+      DataCampagnesFormatted$Surface.zone = as.numeric(DataCampagnesFormatted$Surface.zone)
+      
+      SelectedParcelleCampagnes <-  hot_to_r(input$table_parcelles_campagnes_selected)
+      In = as.numeric(as.vector(t(SelectedParcelleCampagnes)))
+      ListeParcellesCampangesMB=data.frame(expand.grid(Id.campagne=as.numeric(dimnames(SelectedParcelleCampagnes)[[2]]),Id.zone=as.factor(dimnames(SelectedParcelleCampagnes)[[1]])),In=In)
+      
+      SpeciesTraitsInfer = hot_to_r(input$table_species_traits)
+      names(SpeciesTraitsInfer) <- c("Id.sp", "Nom.sp", "DME", "WSG")
+      SpeciesTraitsInfer$Id.sp = as.factor(SpeciesTraitsInfer$Id.sp)
+      SpeciesTraitsInfer$Id.sp = as.factor(SpeciesTraitsInfer$Nom.sp)
+      SpeciesTraitsInfer$DME = as.numeric(SpeciesTraitsInfer$DME)
+      SpeciesTraitsInfer$WSG = as.numeric(SpeciesTraitsInfer$WSG)
+      
+      DataSelected=SelectData(DataCampagnesFormatted,ListeParcellesCampangesMB,SpeciesTraitsInfer)
+      
+      DataInfered=InferFCM(DataSelected,"ParamInferenceMBaiki.R")
+      browser()
+    },error=function(e){
+      
+    })
+  })
+  
   
   updateInputForVisualization <- function(ResultFCM = NULL){
     if(!is.null(ResultFCM)){
@@ -520,6 +656,7 @@ shinyServer(function(input, output, session){
     }
     
   }
+
   ################################ Uploading file data start ##############################
   uploadFileData <- reactive({
     inFile <- input$file_data_start
@@ -1409,29 +1546,29 @@ shinyServer(function(input, output, session){
           )
         }
       })
-      tryCatch({
+      # tryCatch({
         print("Start Sim")
         simulation.input()
         print("End Sim")
-      }, error=function(e){
-        if(hidable){
-          shinyjs::hide('loader_sim')
-          shinyjs::hide('sim_encours')
-          shinyjs::show('image_failure')
-          shinyjs::show('sim_failure')
-          shinyjs::hide('action_save_sim_file')
-          shinyjs::show('actions_sim')
-          shinyjs::hide('lancer_sim_col')
-          shinyjs::show('gotoparameters_col')
-        }
-        showModal(modalDialog(
-          title=uiError,
-          size = "m",
-          footer = modalButton(uiClose),
-          e$message
-        )
-        )
-      })
+      # }, error=function(e){
+      #   if(hidable){
+      #     shinyjs::hide('loader_sim')
+      #     shinyjs::hide('sim_encours')
+      #     shinyjs::show('image_failure')
+      #     shinyjs::show('sim_failure')
+      #     shinyjs::hide('action_save_sim_file')
+      #     shinyjs::show('actions_sim')
+      #     shinyjs::hide('lancer_sim_col')
+      #     shinyjs::show('gotoparameters_col')
+      #   }
+      #   showModal(modalDialog(
+      #     title=uiError,
+      #     size = "m",
+      #     footer = modalButton(uiClose),
+      #     e$message
+      #   )
+      #   )
+      # })
     }
   })
   
@@ -3110,5 +3247,6 @@ updateNumericInput(session, "classMax", value = NULL,
 updateSelectIndicator()
 loadUpdatedIndicator()
 })
-  
+
+
 

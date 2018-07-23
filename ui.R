@@ -20,6 +20,7 @@ sidebar <- dashboardSidebar(
   shinyjs::useShinyjs(),
   sidebarMenu(id="tabs",
               menuItem(strong(uiMitHome), tabName="accueil", icon=icon("home"), selected=TRUE),
+              menuItem(strong(uiMitInference), tabName = "inference", icon=icon("line-chart")),
               menuItem(strong(uiMitSimulation), tabName = "simulation", icon=icon("line-chart")),
               menuItem(strong(uiMitVizualisation),  icon = icon("television"),
                        menuSubItem(strong(uiMitDataSimulation), tabName = "simulating_data", icon = icon("download")),
@@ -44,7 +45,95 @@ body <- dashboardBody(
                   h3(strong(uiSoftwareDescription))
               ),
               tags$style(type='text/css', "#image_dynaffor { text-align: center} #objectif_logiciel { text-align: center}")
-              
+            )
+    ),
+    tabItem(tabName = "inference",
+            fluidRow(
+              div(id = "param_inference",
+                tabBox( width = NULL,
+                  tabPanel(h5(strong(uiCalculateDynamicParameters)),
+                     fluidRow(
+                       column(width= 6,
+                              fileInput('file_data_campagnes', uiImportCampagneCSVFile, multiple = FALSE, width = NULL,
+                                        buttonLabel = paste0(uiImportFile," ..."), placeholder = uiAnyFilechoosed, accept = c(
+                                          "text/csv",
+                                          "text/comma-separated-values,text/plain",
+                                          ".csv"))
+                       ),
+                       column(width = 12,
+                         div(id="bloc_table_data_campagnes",
+                           box(
+                             h5(strong("Données des campagnes collectées")),width = "100%",
+                               fluidRow(
+                                 column(width = 12, id= "table_data_campagnes_col",
+                                        rHandsontableOutput("table_data_campagnes", height = "50px")
+                                 )
+                              )
+                           )
+                         ),
+                         shinyjs::hidden(div(id ='boxloader_FileDataCampagnes', width ="100px",
+                                             div(id="img_loader_FileDataCampagnes", img(src= "trait_loader.gif", width= "100px")),
+                                             tags$style(type='text/css', "#img_loader_FileDataCampagnes { text-align: center;}"),
+                                             div(id="load_FileDataCampagnes_encours", strong(paste0(uiLoadingFileInprogress," ..."))),
+                                             tags$style(type='text/css', "#load_FileDataCampagnes_encours {text-align: center;}")
+                          )
+                         ),
+                         shinyjs::hidden(
+                           div(id="bloc_table_parcelles_campagnes_selected",
+                               box(
+                                 h5(strong("Table de selection des parcelles et des compagnes à utiliser")),width = "100%",
+                                 fluidRow(
+                                   column(width = 12, id= "table_parcelles_campagnes_selected_col",
+                                        rHandsontableOutput("table_parcelles_campagnes_selected", height = "50px")
+                                   )
+                                 )
+                               )
+                           )
+                         ),
+                         
+                         shinyjs::hidden(div(id="bloc_table_species_traits",
+                             box(
+                               h5(strong("Liste des espèces expoitées")),width = "100%",
+                               fluidRow(
+                                 column(width= 6,
+                                        fileInput('file_species_traits', uiImportSpeciesTraitsCSVFile, multiple = FALSE, width = NULL,
+                                                  buttonLabel = paste0(uiImportFile," ..."), placeholder = uiAnyFilechoosed, accept = c(
+                                                    "text/csv",
+                                                    "text/comma-separated-values,text/plain",
+                                                    ".csv"))
+                                 ),
+                                 column(width = 12, id= "table_species_traits_col",
+                                        rHandsontableOutput("table_species_traits", height = "50px")
+                                 )
+                               )
+                             )
+                         )),
+                         shinyjs::hidden(div(id ='boxloader_FileSpeciesTraits', width ="100px",
+                                             div(id="img_loader_FileSpeciesTraits", img(src= "trait_loader.gif", width= "100px")),
+                                             tags$style(type='text/css', "#img_loader_FileSpeciesTraits { text-align: center;}"),
+                                             div(id="load_FileSpeciesTraits_encours", strong(paste0(uiLoadingFileInprogress," ..."))),
+                                             tags$style(type='text/css', "#load_FileSpeciesTraits_encours {text-align: center;}")
+                         )
+                         )
+                         
+                       )
+                     )
+                  )
+                )        
+              ),
+              # shinyjs::hidden(
+              div(id="calculate_param_dyn_bloc",
+                  box( 
+                    width = "100%",
+                    fluidRow(
+                      column(width= 4, 
+                             actionButton("calculate_param_dyn_btn", "Calculer les paramètres", style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                             tags$style(type='text/css', "#calculate_param_dyn_btn{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #calculate_param_dyn_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                      )
+                    )
+                  )
+              )
+              # )
             )
     ),
     tabItem(tabName = "simulation",
@@ -673,7 +762,8 @@ body <- dashboardBody(
             
     ),
     tabItem(tabName = "gestionindicateurs",
-            tabBox( width = NULL,
+            fluidRow(
+              tabBox( width = NULL,
                     tabPanel(h5(strong(uiAddIndicator)),
                              div(id="new_indicateur",
                                  fluidRow(
@@ -755,6 +845,7 @@ body <- dashboardBody(
                              
                     )
             )
+      )
     ),
     tabItem(tabName = "aide",
         includeMarkdown("./about/about.Rmd")
