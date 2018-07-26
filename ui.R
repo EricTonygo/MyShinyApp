@@ -4,6 +4,12 @@
 #
 # http://shiny.rstudio.com
 #
+pkg <- c("shiny", "shinydashboard", "rhandsontable", "data.table", "flexmix", 
+         "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyFiles", "rmarkdown")
+new.pkg <- pkg[!(pkg %in% installed.packages())]
+if (length(new.pkg)) {
+  install.packages(new.pkg)
+}
 library(shinydashboard)
 library(rhandsontable)
 library(shinyBS)
@@ -51,7 +57,7 @@ body <- dashboardBody(
             fluidRow(
               div(id = "param_inference",
                 tabBox( width = NULL,
-                  tabPanel(h5(strong(uiCalculateDynamicParameters)),
+                  tabPanel(h5(strong(uiForestDynamicData)),
                      fluidRow(
                        column(width= 6,
                               fileInput('file_data_campagnes', uiImportCampagneCSVFile, multiple = FALSE, width = NULL,
@@ -116,6 +122,53 @@ body <- dashboardBody(
                          )
                          )
                          
+                       )
+                     )
+                  ),
+                  tabPanel(h5(strong(uiInferenceParameters)),
+                     fluidRow(
+                       column(width = 4,
+                          box(
+                            h5(strong("Liste des classes de diamètre")),width = "100%",
+                            fluidRow(
+                              column(width = 12, id= "table_classes_diam_col",
+                                     rHandsontableOutput("table_classes_diam", height = "50px")
+                              )
+                            ),
+                            fluidRow(
+                              column(width= 12, 
+                                     actionButton("save_classesDiam_btn", "Sauvegarder", style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                     tags$style(type='text/css', "#save_classesDiam_btn{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #save_classesDiam_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                              )
+                            )
+                          )
+                       ),
+                       column(width = 8,
+                          box(
+                            h5(strong("Variables pour le modèle de recrutement")),width = "100%",
+                            fluidRow(
+                              column(width = 6, id= "table_Nb_Arbres_col",
+                                 box(
+                                   h5(strong("Effectifs des espèces")),width = "100%",
+                                   fluidRow(
+                                     column(width = 12,
+                                            rHandsontableOutput("table_Nb_Arbres", height = "50px")
+                                     )
+                                   )
+                                 )
+                              ),
+                              column(width = 6, id= "table_EffC_col",
+                                 box(
+                                   h5(strong("Effectifs des parcelles")),width = "100%",
+                                   fluidRow(
+                                     column(width = 12,
+                                            rHandsontableOutput("table_EffC", height = "50px")
+                                     )
+                                   )
+                                 )
+                              )
+                            )
+                          )
                        )
                      )
                   )

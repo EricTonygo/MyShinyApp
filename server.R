@@ -3,6 +3,12 @@
 #
 # http://shiny.rstudio.com
 #
+pkg <- c("shiny", "shinydashboard", "rhandsontable", "data.table", "flexmix", 
+         "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyFiles", "rmarkdown")
+new.pkg <- pkg[!(pkg %in% installed.packages())]
+if (length(new.pkg)) {
+  install.packages(new.pkg)
+}
 rm(list = ls())
 library(shinydashboard)
 library(rhandsontable)
@@ -488,6 +494,30 @@ shinyServer(function(input, output, session){
     shinyjs::hide('gotoparameters_col')
     
   })
+  
+  ################################ Initialize table of diameter class list #########################
+  initDiameterClassList <- function(){
+    classDiamList = data.frame(classesDiametre = c("10", "Inf"), stringsAsFactors = F)
+    colHeaders = c("Classes diam")
+    output$table_classes_diam <-rhandsontable::renderRHandsontable({
+      rhandsontable::rhandsontable(classDiamList, selectCallback = TRUE, useTypes = TRUE, width = "100%", height = 200) #%>%
+        #hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+        #hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+        #hot_col(col = 1, halign = "htCenter")%>%
+        #hot_context_menu(allowRowEdit = TRUE, allowColEdit = FALSE)
+    })
+  }
+  ################################ Event of saving classe diam #########################
+  observeEvent(input$save_classesDiam_btn, {
+    tryCatch({
+      ClassesDiam = hot_to_r(input$table_classes_diam);
+      browser()
+      
+    }, error = function (e){
+      
+    })
+  })
+  
   
   ################################ Uploading file data campagnes ##############################
   uploadFileDataCampagnes <- reactive({
@@ -3246,6 +3276,7 @@ updateNumericInput(session, "classMax", value = NULL,
 
 updateSelectIndicator()
 loadUpdatedIndicator()
+initDiameterClassList()
 })
 
 
