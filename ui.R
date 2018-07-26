@@ -5,7 +5,7 @@
 # http://shiny.rstudio.com
 #
 pkg <- c("shiny", "shinydashboard", "rhandsontable", "data.table", "flexmix", 
-         "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyFiles", "rmarkdown")
+         "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyjs", "shinyFiles", "rmarkdown")
 new.pkg <- pkg[!(pkg %in% installed.packages())]
 if (length(new.pkg)) {
   install.packages(new.pkg)
@@ -56,10 +56,10 @@ body <- dashboardBody(
     tabItem(tabName = "inference",
             fluidRow(
               div(id = "param_inference",
-                tabBox( width = NULL,
+                tabBox( width = "100%",
                   tabPanel(h5(strong(uiForestDynamicData)),
                      fluidRow(
-                       column(width= 6,
+                       column(width= 12,
                               fileInput('file_data_campagnes', uiImportCampagneCSVFile, multiple = FALSE, width = NULL,
                                         buttonLabel = paste0(uiImportFile," ..."), placeholder = uiAnyFilechoosed, accept = c(
                                           "text/csv",
@@ -67,7 +67,7 @@ body <- dashboardBody(
                                           ".csv"))
                        ),
                        column(width = 12,
-                         div(id="bloc_table_data_campagnes",
+                          shinyjs::hidden(div(id="bloc_table_data_campagnes",
                            box(
                              h5(strong("Données des campagnes collectées")),width = "100%",
                                fluidRow(
@@ -76,7 +76,7 @@ body <- dashboardBody(
                                  )
                               )
                            )
-                         ),
+                         )),
                          shinyjs::hidden(div(id ='boxloader_FileDataCampagnes', width ="100px",
                                              div(id="img_loader_FileDataCampagnes", img(src= "trait_loader.gif", width= "100px")),
                                              tags$style(type='text/css', "#img_loader_FileDataCampagnes { text-align: center;}"),
@@ -87,7 +87,7 @@ body <- dashboardBody(
                          shinyjs::hidden(
                            div(id="bloc_table_parcelles_campagnes_selected",
                                box(
-                                 h5(strong("Table de selection des parcelles et des compagnes à utiliser")),width = "100%",
+                                 h5(strong("Table de sélection des parcelles et des compagnes à utiliser")),width = "100%",
                                  fluidRow(
                                    column(width = 12, id= "table_parcelles_campagnes_selected_col",
                                         rHandsontableOutput("table_parcelles_campagnes_selected", height = "50px")
@@ -149,7 +149,7 @@ body <- dashboardBody(
                             fluidRow(
                               column(width = 6, id= "table_Nb_Arbres_col",
                                  box(
-                                   h5(strong("Effectifs des espèces")),width = "100%",
+                                   h5(strong("Effectifs des espèces par classe de diamètre")),width = "100%",
                                    fluidRow(
                                      column(width = 12,
                                             rHandsontableOutput("table_Nb_Arbres", height = "50px")
@@ -159,7 +159,7 @@ body <- dashboardBody(
                               ),
                               column(width = 6, id= "table_EffC_col",
                                  box(
-                                   h5(strong("Effectifs des parcelles")),width = "100%",
+                                   h5(strong("Effectifs dans les parcelles par classe de diamètre")),width = "100%",
                                    fluidRow(
                                      column(width = 12,
                                             rHandsontableOutput("table_EffC", height = "50px")

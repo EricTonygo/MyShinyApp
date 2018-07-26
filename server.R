@@ -4,7 +4,7 @@
 # http://shiny.rstudio.com
 #
 pkg <- c("shiny", "shinydashboard", "rhandsontable", "data.table", "flexmix", 
-         "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyFiles", "rmarkdown")
+         "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyjs", "shinyFiles", "rmarkdown")
 new.pkg <- pkg[!(pkg %in% installed.packages())]
 if (length(new.pkg)) {
   install.packages(new.pkg)
@@ -497,24 +497,47 @@ shinyServer(function(input, output, session){
   
   ################################ Initialize table of diameter class list #########################
   initDiameterClassList <- function(){
-    classDiamList = data.frame(classesDiametre = c("10", "Inf"), stringsAsFactors = F)
-    colHeaders = c("Classes diam")
+    classDiamList = data.frame(classesDiametre = rep("", 8), stringsAsFactors = F)
+    colHeaders = c("Bornes inférieures")
     output$table_classes_diam <-rhandsontable::renderRHandsontable({
-      rhandsontable::rhandsontable(classDiamList, selectCallback = TRUE, useTypes = TRUE, width = "100%", height = 200) #%>%
-        #hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+      rhandsontable::rhandsontable(classDiamList, colHeaders = colHeaders, selectCallback = TRUE, useTypes = TRUE, width = "100%", height = 240) %>%
+        hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
         #hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
-        #hot_col(col = 1, halign = "htCenter")%>%
-        #hot_context_menu(allowRowEdit = TRUE, allowColEdit = FALSE)
+        hot_col(col = 1, halign = "htCenter")%>%
+        hot_context_menu(allowRowEdit = TRUE, allowColEdit = FALSE)
     })
   }
   ################################ Event of saving classe diam #########################
   observeEvent(input$save_classesDiam_btn, {
-    tryCatch({
-      ClassesDiam = hot_to_r(input$table_classes_diam);
-      browser()
+     tryCatch({
+      ClassesDiam = hot_to_r(input$table_classes_diam)$classesDiametre;
+      ClassesDiam = sort(as.numeric(ClassesDiam[!ClassesDiam%in%c("")]))
+      if(length(ClassesDiam) >= 2){
+        FormattedClassesDiam = c()
+        for(iter in 1:(length(ClassesDiam)-1)){
+          MyClasseDiam = paste0('[', ClassesDiam[iter],', ', ClassesDiam[iter+1], '[')
+          FormattedClassesDiam = c(FormattedClassesDiam, MyClasseDiam)
+        }
+        MyClasseDiam = paste0('[', ClassesDiam[length(ClassesDiam)],', Inf[')
+        FormattedClassesDiam = c(FormattedClassesDiam, MyClasseDiam)
+        VarNbArbres = data.frame(classes= FormattedClassesDiam, include = rep(TRUE, length(ClassesDiam)), stringsAsFactors = F)
+        VarEffC = data.frame(classes=FormattedClassesDiam, include = rep(TRUE, length(ClassesDiam)), stringsAsFactors = F)
+        output$table_Nb_Arbres <-rhandsontable::renderRHandsontable({
+          rhandsontable::rhandsontable(VarNbArbres, colHeaders = c("Classe", "Inclure"), selectCallback = TRUE, useTypes = TRUE, width = "100%", height = 220) %>%
+            hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+            hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+            hot_col(col = 1:2, halign = "htCenter")
+        })
+        output$table_EffC <-rhandsontable::renderRHandsontable({
+          rhandsontable::rhandsontable(VarEffC, colHeaders = c("Classe", "Inclure"), selectCallback = TRUE, useTypes = TRUE, width = "100%", height = 220) %>%
+            hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
+            hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
+            hot_col(col = 1:2, halign = "htCenter")
+        })
+      }
       
     }, error = function (e){
-      
+
     })
   })
   
@@ -543,8 +566,8 @@ shinyServer(function(input, output, session){
           hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
           hot_col(col = 2:length(colHeaders), halign = "htCenter")
       })
-      ListeCampagnes=sort(unique(dataCampagnes$Id.campagne0))
-      ListeParcelles=unique(dataCampagnes$Id.zone)
+      ListeCampagnes=sort(unique(as.character(dataCampagnes$Id.campagne0)))
+      ListeParcelles=sort(unique(as.character(dataCampagnes$Id.zone)))
       TableParcellesCampagnesSelected = matrix(data = rep(TRUE, length(ListeParcelles)*length(ListeCampagnes)), nrow = length(ListeParcelles), ncol = length(ListeCampagnes), dimnames = list(ListeParcelles, ListeCampagnes))
       output$table_parcelles_campagnes_selected <-rhandsontable::renderRHandsontable({
         rhandsontable::rhandsontable(TableParcellesCampagnesSelected, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
@@ -621,7 +644,7 @@ shinyServer(function(input, output, session){
   
   ################################ Calculate dynamic parameters ##############################
   observeEvent(input$calculate_param_dyn_btn, {
-    tryCatch({
+    # tryCatch({
       DataCampagnesFormatted = hot_to_r(input$table_data_campagnes)
       names(DataCampagnesFormatted) <- c("Id.zone", "Id.sp", "Nom.sp", "Diam0", "Diam1", "Id.campagne0", "Id.campagne1", "Surface.zone")
       DataCampagnesFormatted$Id.zone = as.character(DataCampagnesFormatted$Id.zone)
@@ -635,6 +658,7 @@ shinyServer(function(input, output, session){
       
       SelectedParcelleCampagnes <-  hot_to_r(input$table_parcelles_campagnes_selected)
       In = as.numeric(as.vector(t(SelectedParcelleCampagnes)))
+      browser()
       ListeParcellesCampangesMB=data.frame(expand.grid(Id.campagne=as.numeric(dimnames(SelectedParcelleCampagnes)[[2]]),Id.zone=as.factor(dimnames(SelectedParcelleCampagnes)[[1]])),In=In)
       
       SpeciesTraitsInfer = hot_to_r(input$table_species_traits)
@@ -646,11 +670,33 @@ shinyServer(function(input, output, session){
       
       DataSelected=SelectData(DataCampagnesFormatted,ListeParcellesCampangesMB,SpeciesTraitsInfer)
       
+      
+      # Diameter classes in cm 
+      ClassesDiam = hot_to_r(input$table_classes_diam)$classesDiametre;
+      ClassesDiam = sort(as.numeric(ClassesDiam[!ClassesDiam%in%c("")]))
+      
+      
+      # name of the period used for plot
+      Lab.period="years"
+      
+      # Selection des modÃ¨les des 3 processus
+      Models=list(Recruitment="RecruitmentFlexmix",Growth="GrowthFlexmix",Mortality="MortalityFlexmix")
+      
+      # Selection des variables pour le modÃ¨le du processus de recrutement
+      VarRecrutNbArbres = c(paste("NbArbres",ClassesDiam,sep=""))[hot_to_r(input$table_Nb_Arbres)$include]
+      VarRecrutEffC = c(paste("EffC",ClassesDiam,sep=""))[hot_to_r(input$table_EffC)$include]
+      
+      VarRecrut=c(VarRecrutNbArbres,VarRecrutEffC)
+      
+      browser()
+      # Esp?ces ? ne pas regrouper automatiquement
+      UserListApartSpecies=NULL#list(c("50"))
+      
       DataInfered=InferFCM(DataSelected,"ParamInferenceMBaiki.R")
       browser()
-    },error=function(e){
-      
-    })
+    # },error=function(e){
+    #   
+    # })
   })
   
   
@@ -1699,116 +1745,117 @@ shinyServer(function(input, output, session){
   observeEvent(input$save_config,{
     if(!is.null(ParamsDynFile) && file.exists(ParamsDynFile) && file.access(names = ParamsDynFile, mode = 4)==0){
       tryCatch({
-        shinyjs::hide('lancer_sim_col')
-        shinyjs::show('boxloader_FileConfig')
         inFile = parseSavePath(roots, input$save_config)
         Savepath = as.character(inFile$datapath)
-        ParamsDyn = formattingDynData(readRDS(ParamsDynFile))
-        ClassesDiam = ParamsDyn$ClassesDiam
-        NbClasse = length(ClassesDiam)
-        tarifgenerique = input$tarifgenerique
-        if(tarifgenerique ==""){
-          tarifgenerique = "10^(-2.96+1.93*log10(d))"
-        }
-        if(!is.null(input$data_logging)){
-          ST_SAVE <- hot_to_r(input$data_logging)
-        }else{
-          ST_SAVE <- NULL
-        }
+        if(!is.null(Savepath) && length(Savepath) > 0){
+          shinyjs::hide('lancer_sim_col')
+          shinyjs::show('boxloader_FileConfig')
+          ParamsDyn = formattingDynData(readRDS(ParamsDynFile))
+          ClassesDiam = ParamsDyn$ClassesDiam
+          NbClasse = length(ClassesDiam)
+          tarifgenerique = input$tarifgenerique
+          if(tarifgenerique ==""){
+            tarifgenerique = "10^(-2.96+1.93*log10(d))"
+          }
+          if(!is.null(input$data_logging)){
+            ST_SAVE <- hot_to_r(input$data_logging)
+          }else{
+            ST_SAVE <- NULL
+          }
+          
+          if(!is.null(input$data_corresponding_species)){
+            CS_SAVE <-  hot_to_r(input$data_corresponding_species)
+          }else{
+            CS_SAVE <- NULL
+          }
         
-        if(!is.null(input$data_corresponding_species)){
-          CS_SAVE <-  hot_to_r(input$data_corresponding_species)
-        }else{
-          CS_SAVE <- NULL
-        }
-      
-        if(!is.null(input$data_start_species)){
-          DST_SAVE <-  hot_to_r(input$data_start_species)
-        }else{
-          DST_SAVE <- NULL
-        }
+          if(!is.null(input$data_start_species)){
+            DST_SAVE <-  hot_to_r(input$data_start_species)
+          }else{
+            DST_SAVE <- NULL
+          }
+          
+          if(!is.null(input$data_start_missing_species)){
+            DST_MS_SAVE <-  hot_to_r(input$data_start_missing_species)
+          }else{
+            DST_MS_SAVE <- NULL
+          }
         
-        if(!is.null(input$data_start_missing_species)){
-          DST_MS_SAVE <-  hot_to_r(input$data_start_missing_species)
-        }else{
-          DST_MS_SAVE <- NULL
-        }
-      
-        if(!is.null(input$vector_damage)){
-          VD_SAVE <- hot_to_r(input$vector_damage)
-        }else{
-          VD_SAVE <- NULL
-        }
-        
-        if(!is.null(input$vector_number_per_diameter_class)){
-          VNUM_SAVE <- hot_to_r(input$vector_number_per_diameter_class)
-        }else{
-          VNUM_SAVE <- NULL
-        }
-        
-        if(!is.null(input$vector_tauxrecrutement_per_diameter_class)){
-          VTR_SAVE <- hot_to_r(input$vector_tauxrecrutement_per_diameter_class)
-        }else{
-          VTR_SAVE <- NULL
-        }
-        
-        nbchain = input$nbchain
-        StartingDate = as.numeric(input$anneedebutSim)
-        Nb.rotation = as.numeric(input$nombrerotation)
-        rotation = as.numeric(input$dureerotation)
-        DelayLogging =as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim)
-        Fin.simu = as.numeric(input$dureesimulation)
-        Check.Allparcelle = input$Allparcelle
-        Starting.plot= as.numeric(input$parcelle)
-        Essence = as.character(input$espece)
-        RecruitementRate = as.numeric(input$tauxrecrutement)
-        StartingLogging = as.numeric(input$anneefirstlogging)
-        Starting.plot = NULL
-        Surface.zone = NULL
-        if(!is.null(ParamsDyn) && ParamsDyn$DataType == "parcelle"){
-          if(!is.null(SimSiteName) && SimSiteName == getCSVSiteName()){
-            Surface.zone = as.numeric(input$surfaceparcelle)
-          }else if(!is.null(SimSiteName)){
-            if(input$Allparcelle == TRUE){
-              if(!is.null(ParamsSimSite)){
-                Starting.plot= as.character(unique(ParamsSimSite$Id.zone))
+          if(!is.null(input$vector_damage)){
+            VD_SAVE <- hot_to_r(input$vector_damage)
+          }else{
+            VD_SAVE <- NULL
+          }
+          
+          if(!is.null(input$vector_number_per_diameter_class)){
+            VNUM_SAVE <- hot_to_r(input$vector_number_per_diameter_class)
+          }else{
+            VNUM_SAVE <- NULL
+          }
+          
+          if(!is.null(input$vector_tauxrecrutement_per_diameter_class)){
+            VTR_SAVE <- hot_to_r(input$vector_tauxrecrutement_per_diameter_class)
+          }else{
+            VTR_SAVE <- NULL
+          }
+          
+          nbchain = input$nbchain
+          StartingDate = as.numeric(input$anneedebutSim)
+          Nb.rotation = as.numeric(input$nombrerotation)
+          rotation = as.numeric(input$dureerotation)
+          DelayLogging =as.numeric(input$anneefirstlogging)-as.numeric(input$anneedebutSim)
+          Fin.simu = as.numeric(input$dureesimulation)
+          Check.Allparcelle = input$Allparcelle
+          Starting.plot= as.numeric(input$parcelle)
+          Essence = as.character(input$espece)
+          RecruitementRate = as.numeric(input$tauxrecrutement)
+          StartingLogging = as.numeric(input$anneefirstlogging)
+          Starting.plot = NULL
+          Surface.zone = NULL
+          if(!is.null(ParamsDyn) && ParamsDyn$DataType == "parcelle"){
+            if(!is.null(SimSiteName) && SimSiteName == getCSVSiteName()){
+              Surface.zone = as.numeric(input$surfaceparcelle)
+            }else if(!is.null(SimSiteName)){
+              if(input$Allparcelle == TRUE){
+                if(!is.null(ParamsSimSite)){
+                  Starting.plot= as.character(unique(ParamsSimSite$Id.zone))
+                }
+              }else{
+                Starting.plot= as.numeric(input$parcelle)
               }
-            }else{
-              Starting.plot= as.numeric(input$parcelle)
             }
           }
-        }
-        Aggregation = F
-        if(!is.null(ParamsDyn) && ParamsDyn$DataType == "parcelle"){
-          SimSiteName <<- input$siteParcelle
-          if(!is.null(SimSiteName) && SimSiteName != getCSVSiteName()){
-            StartingDate = as.numeric(input$anneedebutSimAutreSite)
-            Aggregation = input$aggregate_parcels
-          }else if(!is.null(SimSiteName)){
+          Aggregation = F
+          if(!is.null(ParamsDyn) && ParamsDyn$DataType == "parcelle"){
+            SimSiteName <<- input$siteParcelle
+            if(!is.null(SimSiteName) && SimSiteName != getCSVSiteName()){
+              StartingDate = as.numeric(input$anneedebutSimAutreSite)
+              Aggregation = input$aggregate_parcels
+            }else if(!is.null(SimSiteName)){
+              StartingDate = as.numeric(input$anneedebutSim)
+            }
+          }else if(!is.null(ParamsDyn) && ParamsDyn$DataType == "sentier"){
+            SimSiteName <<- NULL
             StartingDate = as.numeric(input$anneedebutSim)
           }
-        }else if(!is.null(ParamsDyn) && ParamsDyn$DataType == "sentier"){
-          SimSiteName <<- NULL
-          StartingDate = as.numeric(input$anneedebutSim)
+          SimulateLogging = input$simulate_logging
+          DelayAfterLogging = as.numeric(input$delayAfterLogging)
+          DelayDynamicsPostExploitation = as.numeric(input$delayDynamicsPostExploitation)
+          ParamSim = list(SimulateLogging= SimulateLogging, DelayAfterLogging = DelayAfterLogging, DelayDynamicsPostExploitation = DelayDynamicsPostExploitation, SimSiteName = SimSiteName, SimSiteNameFile = SimSiteNameFile, Surface.zone = Surface.zone, StartingLogging = StartingLogging, Essence=Essence, RecruitementRate = RecruitementRate, Check.Allparcelle = Check.Allparcelle, Fin.simu = Fin.simu, Nb.rotation = Nb.rotation, rotation = rotation, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = VD_SAVE, Starting.plot = Starting.plot, Essence = Essence,  StartingDate = StartingDate, nbchain = nbchain , Tarifgenerique = tarifgenerique, DataType = ParamsDyn$DataType)
+          ParamSim$vector_damage = VD_SAVE
+          ParamSim$MySpeciesTraits = ST_SAVE
+          ParamSim$Effectifs = VNUM_SAVE
+          ParamSim$ClasseDiamWeights = VTR_SAVE
+          ParamSim$DataStart = DST_SAVE
+          ParamSim$DataStartMissingSpecies = DST_MS_SAVE
+          ParamSim$CorrespondingSpecies = CS_SAVE
+          ParamSim$SpeciesTraitsSim = SpeciesTraitsSim
+          ParamSim$ParamsDynFile = ParamsDynFile
+          save(ParamSim, file = Savepath)
+          shinyjs::hide('boxloader_FileConfig')
+          shinyjs::show('lancer_sim_col')
+          showNotification("Scénario sauvegardé avec succès.", duration = 10, type = "message")
         }
-        SimulateLogging = input$simulate_logging
-        DelayAfterLogging = as.numeric(input$delayAfterLogging)
-        DelayDynamicsPostExploitation = as.numeric(input$delayDynamicsPostExploitation)
-        ParamSim = list(SimulateLogging= SimulateLogging, DelayAfterLogging = DelayAfterLogging, DelayDynamicsPostExploitation = DelayDynamicsPostExploitation, SimSiteName = SimSiteName, SimSiteNameFile = SimSiteNameFile, Surface.zone = Surface.zone, StartingLogging = StartingLogging, Essence=Essence, RecruitementRate = RecruitementRate, Check.Allparcelle = Check.Allparcelle, Fin.simu = Fin.simu, Nb.rotation = Nb.rotation, rotation = rotation, DelayLogging = DelayLogging, nbchain = nbchain, vector_damage = VD_SAVE, Starting.plot = Starting.plot, Essence = Essence,  StartingDate = StartingDate, nbchain = nbchain , Tarifgenerique = tarifgenerique, DataType = ParamsDyn$DataType)
-        ParamSim$vector_damage = VD_SAVE
-        ParamSim$MySpeciesTraits = ST_SAVE
-        ParamSim$Effectifs = VNUM_SAVE
-        ParamSim$ClasseDiamWeights = VTR_SAVE
-        ParamSim$DataStart = DST_SAVE
-        ParamSim$DataStartMissingSpecies = DST_MS_SAVE
-        ParamSim$CorrespondingSpecies = CS_SAVE
-        ParamSim$SpeciesTraitsSim = SpeciesTraitsSim
-        ParamSim$ParamsDynFile = ParamsDynFile
-        save(ParamSim, file = Savepath)
-        shinyjs::hide('boxloader_FileConfig')
-        shinyjs::show('lancer_sim_col')
-        showNotification("Scénario sauvegardé avec succès.", duration = 10, type = "message")
-        
       },error=function(e){
         shinyjs::hide('boxloader_FileConfig')
         shinyjs::show('lancer_sim_col')
@@ -1835,25 +1882,27 @@ shinyServer(function(input, output, session){
   ############ Charger un fichier de données simulées #########################
   observeEvent(input$load_sim_data,{
     tryCatch({
-      shinyjs::hide('load_sim_data')
-      shinyjs::show('boxloader_SimData')
+      
       inFile = parseFilePaths(roots3, input$load_sim_data)
       Loadpath = as.character(inFile$datapath)
-      load(Loadpath)
-      updateInputForVisualization(ResultFCM)
-      CurrentResultSimDataFile <<- Loadpath
-      IndicatorFile = paste0(IndicatorsFolder, "\\FileIndicateur.RData")
-      if(!is.null(IndicatorFile) && file.exists(IndicatorFile) && file.access(names = IndicatorFile, mode = 4)==0){
-        load(IndicatorFile)
-      }else{
-        listeIndicateur= list()
+      if(!is.null(Loadpath) && length(Loadpath) > 0){
+        shinyjs::hide('load_sim_data')
+        shinyjs::show('boxloader_SimData')
+        load(Loadpath)
+        updateInputForVisualization(ResultFCM)
+        CurrentResultSimDataFile <<- Loadpath
+        IndicatorFile = paste0(IndicatorsFolder, "\\FileIndicateur.RData")
+        if(!is.null(IndicatorFile) && file.exists(IndicatorFile) && file.access(names = IndicatorFile, mode = 4)==0){
+          load(IndicatorFile)
+        }else{
+          listeIndicateur= list()
+        }
+        updateSimulatingDataOfIndicator(listeIndicateur)
+        updateInfosDescriptionSim(ResultFCM)
+        shinyjs::hide('boxloader_SimData')
+        shinyjs::show('load_sim_data')
+        showNotification(uiDataLoadedSuccessfully, duration = 10, type = "message")
       }
-      updateSimulatingDataOfIndicator(listeIndicateur)
-      shinyjs::show('load_sim_data')
-      shinyjs::hide('boxloader_SimData')
-      updateInfosDescriptionSim(ResultFCM)
-      showNotification(uiDataLoadedSuccessfully, duration = 10, type = "message")
-    
     },error=function(e){
       shinyjs::show('load_sim_data')
       shinyjs::hide('boxloader_SimData')
@@ -2543,7 +2592,7 @@ shinyServer(function(input, output, session){
   observeEvent(input$load_dyn,{
     SimSiteName <<- getCSVSiteName();
     SimSiteNameFile <<- NULL
-    tryCatch({
+    # tryCatch({
       shinyjs::hide('load_dyn')
       shinyjs::hide('bloc_parameters_logging')
       shinyjs::hide('bloc_parameters_simulation')
@@ -2551,85 +2600,90 @@ shinyServer(function(input, output, session){
       inFile = parseFilePaths(roots2, input$load_dyn)
       Loadpath = as.character(inFile$datapath)
       ParamsDynFile <<- Loadpath
-      ParamsDyn = formattingDynData(readRDS(ParamsDynFile))
-      if(!is.null(ParamsDyn)){
-        TypeInventaire = ParamsDyn$DataType
-        ClassesDiam = ParamsDyn$ClassesDiam
-        updateInfosSite(TypeInventaire, ParamsDyn$Descriptif$site, ParamsDyn$Descriptif$pays, ClassesDiam)
-        NewSpeciesTraits = ParamsDyn$SpeciesTraits
-        if(!is.null(NewSpeciesTraits)){
-          SpeciesTraitsSim <<- formattingSimData(NewSpeciesTraits)
-        }
-        if(!is.null(TypeInventaire) && TypeInventaire == "sentier"){
-          Essences = NULL
+      if(!is.null(ParamsDynFile) && length(ParamsDynFile) > 0){
+        ParamsDyn = formattingDynData(readRDS(ParamsDynFile))
+        if(!is.null(ParamsDyn)){
+          TypeInventaire = ParamsDyn$DataType
+          ClassesDiam = ParamsDyn$ClassesDiam
+          updateInfosSite(TypeInventaire, ParamsDyn$Descriptif$site, ParamsDyn$Descriptif$pays, ClassesDiam)
+          NewSpeciesTraits = ParamsDyn$SpeciesTraits
           if(!is.null(NewSpeciesTraits)){
-            Essences = NewSpeciesTraits$Nom.sp
+            SpeciesTraitsSim <<- formattingSimData(NewSpeciesTraits)
           }
-          updateSelectizeInput(session, "espece",  choices = levels(Essences),
-                               selected = NULL, server = TRUE)
-          shinyjs::hide("aggregate_parcels_bloc")
-          updateCheckboxInput(session, "aggregate_parcels", value = FALSE)
-          loadTableNumberParDiameterClassVector(ClassesDiam)
-          loadTableContributionTauxRecrutementParDiameter(ClassesDiam)
-          #loadTableDataSpeciesTraits(SpeciesTraitsSim)
-          shinyjs::hide('bloc_params_logging_parcelle')
-          shinyjs::hide('bloc_list_parcelles_sim')
-          shinyjs::hide('bloc_start_species_number')
-          shinyjs::hide('bloc_corresponding_species')
-          shinyjs::hide('siteParcelle')
-          shinyjs::hide('file_data_start')
-          shinyjs::hide('surfaceparcelle')
-          shinyjs::hide('anneedebutSimAutreSite')
-          shinyjs::show('anneedebutSim')
-          shinyjs::show('delayDynamicsPostExploitation')
-          shinyjs::show('bloc_params_logging_sentier')
-          shinyjs::show('bloc_espece_sentier')
-          shinyjs::show('bloc_recrutement_sentier')
-          shinyjs::show('bloc_tauxrecrutement_sentiers_sim')
-          shinyjs::show('bloc_estimation_tcs_dimako')
-        }else if(!is.null(TypeInventaire) && TypeInventaire == "parcelle"){
-          Parcelles = as.factor(ParamsDyn$Descriptif$Parcelles)
-          Campagnes = as.factor(ParamsDyn$Descriptif$Campagnes)
-          Species = ParamsDyn$SpeciesTraits$Nom.sp
-          AnneeExploitation = as.numeric(ParamsDyn$Descriptif$AnneeExploitation)
-          Sites = getSitesListForParcelle()
-          updateUIInputsValues(Parcelles, Sites, Campagnes, ClassesDiam, Species, AnneeExploitation)
-          shinyjs::hide('bloc_params_logging_sentier')
-          shinyjs::hide('bloc_espece_sentier')
-          shinyjs::hide('bloc_recrutement_sentier')
-          shinyjs::hide('bloc_tauxrecrutement_sentiers_sim')
-          shinyjs::hide('bloc_list_parcelles_sim')
-          shinyjs::hide('bloc_estimation_tcs_dimako')
-          shinyjs::hide('delayDynamicsPostExploitation')
-          shinyjs::show('anneedebutSimAutreSite')
-          shinyjs::show('bloc_params_logging_parcelle')
-          shinyjs::show('bloc_start_species_number')
-          shinyjs::show('siteParcelle')
-          shinyjs::show('file_data_start')
-          shinyjs::show('surfaceparcelle')
-          shinyjs::show('anneedebutSim')
+          if(!is.null(TypeInventaire) && TypeInventaire == "sentier"){
+            Essences = NULL
+            if(!is.null(NewSpeciesTraits)){
+              Essences = NewSpeciesTraits$Nom.sp
+            }
+            updateSelectizeInput(session, "espece",  choices = levels(Essences),
+                                 selected = NULL, server = TRUE)
+            shinyjs::hide("aggregate_parcels_bloc")
+            updateCheckboxInput(session, "aggregate_parcels", value = FALSE)
+            loadTableNumberParDiameterClassVector(ClassesDiam)
+            loadTableContributionTauxRecrutementParDiameter(ClassesDiam)
+            #loadTableDataSpeciesTraits(SpeciesTraitsSim)
+            shinyjs::hide('bloc_params_logging_parcelle')
+            shinyjs::hide('bloc_list_parcelles_sim')
+            shinyjs::hide('bloc_start_species_number')
+            shinyjs::hide('bloc_corresponding_species')
+            shinyjs::hide('siteParcelle')
+            shinyjs::hide('file_data_start')
+            shinyjs::hide('surfaceparcelle')
+            shinyjs::hide('anneedebutSimAutreSite')
+            shinyjs::show('anneedebutSim')
+            shinyjs::show('delayDynamicsPostExploitation')
+            shinyjs::show('bloc_params_logging_sentier')
+            shinyjs::show('bloc_espece_sentier')
+            shinyjs::show('bloc_recrutement_sentier')
+            shinyjs::show('bloc_tauxrecrutement_sentiers_sim')
+            shinyjs::show('bloc_estimation_tcs_dimako')
+          }else if(!is.null(TypeInventaire) && TypeInventaire == "parcelle"){
+            Parcelles = as.factor(ParamsDyn$Descriptif$Parcelles)
+            Campagnes = as.factor(ParamsDyn$Descriptif$Campagnes)
+            Species = ParamsDyn$SpeciesTraits$Nom.sp
+            AnneeExploitation = as.numeric(ParamsDyn$Descriptif$AnneeExploitation)
+            Sites = getSitesListForParcelle()
+            updateUIInputsValues(Parcelles, Sites, Campagnes, ClassesDiam, Species, AnneeExploitation)
+            shinyjs::hide('bloc_params_logging_sentier')
+            shinyjs::hide('bloc_espece_sentier')
+            shinyjs::hide('bloc_recrutement_sentier')
+            shinyjs::hide('bloc_tauxrecrutement_sentiers_sim')
+            shinyjs::hide('bloc_list_parcelles_sim')
+            shinyjs::hide('bloc_estimation_tcs_dimako')
+            shinyjs::hide('delayDynamicsPostExploitation')
+            shinyjs::show('anneedebutSimAutreSite')
+            shinyjs::show('bloc_params_logging_parcelle')
+            shinyjs::show('bloc_start_species_number')
+            shinyjs::show('siteParcelle')
+            shinyjs::show('file_data_start')
+            shinyjs::show('surfaceparcelle')
+            shinyjs::show('anneedebutSim')
+          }
+          loadTableDataDamagesVector(ClassesDiam)
+          
         }
-        loadTableDataDamagesVector(ClassesDiam)
-        
+        shinyjs::hide('boxloader_FileDyn')
+        shinyjs::show('load_dyn')
+        shinyjs::show('action_save_sim_file')
+        shinyjs::show('actions_sim')
+        shinyjs::show('bloc_parameters_simulation')
+        showNotification(uiFileImportedSuccessfully, duration = 10, type = "message")
+      }else{
+        shinyjs::hide('boxloader_FileDyn')
+        shinyjs::show('load_dyn')
       }
-      shinyjs::hide('boxloader_FileDyn')
-      shinyjs::show('load_dyn')
-      shinyjs::show('action_save_sim_file')
-      shinyjs::show('actions_sim')
-      shinyjs::show('bloc_parameters_simulation')
-      showNotification(uiFileImportedSuccessfully, duration = 10, type = "message")
       
-    },error=function(e){
-      shinyjs::hide('boxloader_FileDyn')
-      shinyjs::show('load_dyn')
-      showModal(modalDialog(
-        title=uiErrorWhileLoading,
-        size = "m",
-        footer = modalButton(uiClose),
-        e$message
-        )
-      )
-    })
+    # },error=function(e){
+    #   shinyjs::hide('boxloader_FileDyn')
+    #   shinyjs::show('load_dyn')
+    #   showModal(modalDialog(
+    #     title=uiErrorWhileLoading,
+    #     size = "m",
+    #     footer = modalButton(uiClose),
+    #     e$message
+    #     )
+    #   )
+    # })
   })
   
   ######Fonction du tracé de la structure diametrique et de l'affichage des données de l'évolution dans le temps###########
