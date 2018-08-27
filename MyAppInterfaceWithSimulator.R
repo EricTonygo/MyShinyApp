@@ -380,8 +380,7 @@ FCMplot<-function(ParamSim,Effectifs,SpeciesTraits,out.InferFCM,LoggingFunction,
   SimRecrut=ExtractDynDataForSimulation(SimRecrut, Effectifs)                                     
   SimGrowth=ExtractDynDataForSimulation(SimGrowth, Effectifs)
   SimMort=ExtractDynDataForSimulation(SimMort, Effectifs)
-  browser()
-  start_time <- Sys.time()
+  #start_time <- Sys.time()
   # boucles des simulation
   for (k in 1:nbchain){
     
@@ -422,20 +421,17 @@ FCMplot<-function(ParamSim,Effectifs,SpeciesTraits,out.InferFCM,LoggingFunction,
       # Stockage des Trajectoires
       
       RecEffectifsTmp[compteur,]=cbind(as.vector(Eff.cur),RepListeNomsp,RepClasseDiam,j+1,k)
-      browser()
       compteur=compteur+NbObsParIter
-      browser()
-      
+
       
     }  # Fin boucle du j, trajectoire d'effectifs
     
     RecEffectifs=rbind(RecEffectifs,RecEffectifsTmp[RecEffectifsTmp[,1]>0,])
     
   } # Fin boucle du k, r?p?tition MC
-  end_time <- Sys.time()
-  print(end_time - start_time)
-  browser()
-  
+  #end_time <- Sys.time()
+  #print(end_time - start_time)
+
   
   
   colnames(RecEffectifs)=c("Effectifs","Nom.sp","ClasseDiam","Temps","iter")

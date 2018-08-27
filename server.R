@@ -3,13 +3,14 @@
 #
 # http://shiny.rstudio.com
 #
+rm(list = ls())
 pkg <- c("shiny", "shinydashboard", "rhandsontable", "data.table", "flexmix", 
          "ggplot2", "DT", "shinyBS", "Rcpp", "shinyAce", "shinyjs", "shinyFiles", "rmarkdown")
 new.pkg <- pkg[!(pkg %in% installed.packages())]
 if (length(new.pkg)) {
   install.packages(new.pkg)
 }
-rm(list = ls())
+
 library(shinydashboard)
 library(rhandsontable)
 library(data.table)
@@ -28,7 +29,10 @@ assign("IndicatorsFolder", NULL, envir = .GlobalEnv)
 assign("SimSiteNameFile", NULL, envir = .GlobalEnv)
 assign("SimSiteName", NULL, envir = .GlobalEnv)
 source("translations.R",local=T, encoding = 'UTF-8')
+source('R/FormattingMBaiki2017.R')
 source("R/ClasseDiamSTAGB.R")
+source("R/selectData.R")
+source("R/InferFCM.R")
 source("MyAppInterfaceWithSimulator.R")
 source("algoExtractIndicator.R")
 source("buildListOfIndicator.R",local=T, encoding = 'UTF-8')
@@ -566,8 +570,8 @@ shinyServer(function(input, output, session){
           hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
           hot_col(col = 2:length(colHeaders), halign = "htCenter")
       })
-      ListeCampagnes=sort(unique(as.character(dataCampagnes$Id.campagne0)))
-      ListeParcelles=sort(unique(as.character(dataCampagnes$Id.zone)))
+      ListeCampagnes=sort(as.numeric(unique(as.character(dataCampagnes$Id.campagne0))))
+      ListeParcelles=sort(as.numeric(unique(as.character(dataCampagnes$Id.zone))))
       TableParcellesCampagnesSelected = matrix(data = rep(TRUE, length(ListeParcelles)*length(ListeCampagnes)), nrow = length(ListeParcelles), ncol = length(ListeCampagnes), dimnames = list(ListeParcelles, ListeCampagnes))
       output$table_parcelles_campagnes_selected <-rhandsontable::renderRHandsontable({
         rhandsontable::rhandsontable(TableParcellesCampagnesSelected, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
@@ -645,34 +649,44 @@ shinyServer(function(input, output, session){
   ################################ Calculate dynamic parameters ##############################
   observeEvent(input$calculate_param_dyn_btn, {
     # tryCatch({
-      DataCampagnesFormatted = hot_to_r(input$table_data_campagnes)
+      shinyjs::hide('calculate_param_dyn_col')
+      shinyjs::show('boxloader_CalculateParamDyn')
+      # DataCampagnesFormatted = hot_to_r(input$table_data_campagnes)
+      # DataCampagnesFormatted = subset(DataCampagnesFormatted, !is.null(Id.sp)&!is.na(Id.sp)&Id.sp!="")
+      browser()
+      DataCampagnesFormatted = read.csv2("dataCampagnes2.csv")
       names(DataCampagnesFormatted) <- c("Id.zone", "Id.sp", "Nom.sp", "Diam0", "Diam1", "Id.campagne0", "Id.campagne1", "Surface.zone")
-      DataCampagnesFormatted$Id.zone = as.character(DataCampagnesFormatted$Id.zone)
-      DataCampagnesFormatted$Id.sp = as.factor(DataCampagnesFormatted$Id.sp)
-      DataCampagnesFormatted$Nom.sp = as.factor(DataCampagnesFormatted$Nom.sp)
+      DataCampagnesFormatted$Id.zone = as.factor(as.character(DataCampagnesFormatted$Id.zone))
+      DataCampagnesFormatted$Id.sp = as.factor(as.character(DataCampagnesFormatted$Id.sp))
+      DataCampagnesFormatted$Nom.sp = as.factor(as.character(DataCampagnesFormatted$Nom.sp))
       DataCampagnesFormatted$Diam0 = as.numeric(DataCampagnesFormatted$Diam0)
       DataCampagnesFormatted$Diam1 = as.numeric(DataCampagnesFormatted$Diam1)
       DataCampagnesFormatted$Id.campagne0 = as.numeric(DataCampagnesFormatted$Id.campagne0)
       DataCampagnesFormatted$Id.campagne1 = as.numeric(DataCampagnesFormatted$Id.campagne1)
       DataCampagnesFormatted$Surface.zone = as.numeric(DataCampagnesFormatted$Surface.zone)
+    
       
-      SelectedParcelleCampagnes <-  hot_to_r(input$table_parcelles_campagnes_selected)
-      In = as.numeric(as.vector(t(SelectedParcelleCampagnes)))
-      browser()
-      ListeParcellesCampangesMB=data.frame(expand.grid(Id.campagne=as.numeric(dimnames(SelectedParcelleCampagnes)[[2]]),Id.zone=as.factor(dimnames(SelectedParcelleCampagnes)[[1]])),In=In)
-      
+      ListeParcellesCampangesMB=Table.Parcelles.Campagnes.selected.MBaiki(DataCampagnesFormatted)
+      # SelectedParcelleCampagnes <-  hot_to_r(input$table_parcelles_campagnes_selected)
+      # SelectedParcelleCampagnes = subset(SelectedParcelleCampagnes, SelectedParcelleCampagnes[[1]]%in%c(TRUE, FALSE))
+      # In = as.numeric(as.vector(t(SelectedParcelleCampagnes)))
+      # ListeCampagnes=sort(as.numeric(unique(as.character(DataCampagnesFormatted$Id.campagne0))))
+      # ListeParcelles=as.factor(sort(unique(as.character(DataCampagnesFormatted$Id.zone))))
+      # ListeParcellesCampangesMB=data.frame(expand.grid(Id.campagne=ListeCampagnes, Id.zone=ListeParcelles),In=In)
       SpeciesTraitsInfer = hot_to_r(input$table_species_traits)
+      SpeciesTraitsInfer = subset(SpeciesTraitsInfer, !is.null(Id.sp)&!is.na(Id.sp)&Id.sp!="")
+      browser()
       names(SpeciesTraitsInfer) <- c("Id.sp", "Nom.sp", "DME", "WSG")
-      SpeciesTraitsInfer$Id.sp = as.factor(SpeciesTraitsInfer$Id.sp)
-      SpeciesTraitsInfer$Id.sp = as.factor(SpeciesTraitsInfer$Nom.sp)
+      SpeciesTraitsInfer$Id.sp = as.factor(as.character(SpeciesTraitsInfer$Id.sp))
+      SpeciesTraitsInfer$Nom.sp = as.factor(as.character(SpeciesTraitsInfer$Nom.sp))
       SpeciesTraitsInfer$DME = as.numeric(SpeciesTraitsInfer$DME)
       SpeciesTraitsInfer$WSG = as.numeric(SpeciesTraitsInfer$WSG)
-      
       DataSelected=SelectData(DataCampagnesFormatted,ListeParcellesCampangesMB,SpeciesTraitsInfer)
       
       
+      
       # Diameter classes in cm 
-      ClassesDiam = hot_to_r(input$table_classes_diam)$classesDiametre;
+      ClassesDiam = hot_to_r(input$table_classes_diam)$classesDiametre
       ClassesDiam = sort(as.numeric(ClassesDiam[!ClassesDiam%in%c("")]))
       
       
@@ -688,12 +702,22 @@ shinyServer(function(input, output, session){
       
       VarRecrut=c(VarRecrutNbArbres,VarRecrutEffC)
       
-      browser()
       # Esp?ces ? ne pas regrouper automatiquement
-      UserListApartSpecies=NULL#list(c("50"))
+      UserListApartSpecies = NULL#list(c("50"))
       
-      DataInfered=InferFCM(DataSelected,"ParamInferenceMBaiki.R")
+      NomFileSimData=input$sim_data_out_filename
+      NomFileSimData =  ifelse(is.null(NomFileSimData) | is.na(NomFileSimData) | NomFileSimData=="", "DefaultSimDataFile", NomFileSimData)
+      PathFilesSimData = paste0(DataSimFolder, '/', NomFileSimData)
       browser()
+      DataInfered=InferFCM(DataSelected, ClassesDiam, Models, VarRecrut, UserListApartSpecies,  PathFilesSimData)
+      
+      NomFileDynParams=input$dyn_param_out_filename
+      NomFileDynParams =  ifelse(is.null(NomFileDynParams) | is.na(NomFileDynParams) | NomFileDynParams=="", "DefaultDynParamsFile", NomFileDynParams)
+      saveRDS(DataInfered,file=paste0(DataDynFolder, '/', NomFileDynParams,'.RDS'))
+      
+      showNotification("Inference successfully ended!", duration = 10, type = "message")
+      shinyjs::hide('boxloader_CalculateParamDyn')
+      shinyjs::show('calculate_param_dyn_col')
     # },error=function(e){
     #   
     # })
@@ -706,9 +730,7 @@ shinyServer(function(input, output, session){
       DataType = ResultFCM$DataType
       ClassesDiam = ResultFCM$ClassesDiam
       ParamSim = ResultFCM$ParamSim
-      updateSliderInput(session, "yearslider_strDiam", value = StoreTime[1], min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
-      updateSliderInput(session, "yearrange_indicateur", value = c(StoreTime[1], StoreTime[length(StoreTime)]),
-                        min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
+      
       NbClasseDiam = length(ClassesDiam)
       updateNumericInput(session, "diamMin", value = ClassesDiam[1],
                          min = 0, max = ClassesDiam[NbClasseDiam], step = 1)
@@ -718,6 +740,7 @@ shinyServer(function(input, output, session){
                          min = 1, max = NbClasseDiam, step = 1)
       updateNumericInput(session, "classMax", value = NbClasseDiam,
                          min = 1, max = NbClasseDiam, step = 1)
+      updateSliderInput(session, "yearslider_strDiam", value = StoreTime[1], min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
       if(!is.null(DataType) &&  DataType == "sentier"){
         updateSelectizeInput(session, "groupe_espece_indicateur", choices = ParamSim$Essence,
                              selected = ParamSim$Essence,  server = TRUE)
@@ -729,6 +752,9 @@ shinyServer(function(input, output, session){
         updateSelectizeInput(session, "groupe_espece_strDia", choices = ResultFCM$SpeciesTraits$Nom.sp,
                              selected = NULL,  server = TRUE)
       }
+      updateSliderInput(session, "yearrange_indicateur", value = c(StoreTime[1], StoreTime[length(StoreTime)]),
+                        min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
+     
     }
     
   }
@@ -3312,13 +3338,13 @@ updateSelectizeInput(session, "groupe_espece_strDia", choices = NULL,
                      selected = NULL,  server = TRUE)
 choicesParcelles = NULL
 
-updateSliderInput(session, "yearrange_indicateur", value = NULL,
-                    min = NULL, max = NULL, step = 1)
-
-
-updateSliderInput(session, "yearslider_strDiam", value = NULL,
-                    min = NULL, max = NULL, step = 1)
-#alphaInd = MBaikiFormatted$alpha
+# updateSliderInput(session, "yearrange_indicateur", value = NULL,
+#                     min = NULL, max = NULL, step = 1)
+# 
+# 
+# updateSliderInput(session, "yearslider_strDiam", value = NULL,
+#                     min = NULL, max = NULL, step = 1)
+# #alphaInd = MBaikiFormatted$alpha
 updateNumericInput(session, "diamMin", value = NULL,
                    min = NULL, max = NULL, step = 1)
 updateNumericInput(session, "diamMax", value = NULL,

@@ -26,7 +26,7 @@ sidebar <- dashboardSidebar(
   shinyjs::useShinyjs(),
   sidebarMenu(id="tabs",
               menuItem(strong(uiMitHome), tabName="accueil", icon=icon("home"), selected=TRUE),
-              menuItem(strong(uiMitInference), tabName = "inference", icon=icon("line-chart")),
+              menuItem(strong(uiMitInference), tabName = "inference", icon=icon("calculator")),
               menuItem(strong(uiMitSimulation), tabName = "simulation", icon=icon("line-chart")),
               menuItem(strong(uiMitVizualisation),  icon = icon("television"),
                        menuSubItem(strong(uiMitDataSimulation), tabName = "simulating_data", icon = icon("download")),
@@ -137,7 +137,7 @@ body <- dashboardBody(
                             ),
                             fluidRow(
                               column(width= 12, 
-                                     actionButton("save_classesDiam_btn", "Sauvegarder", style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
+                                     actionButton("save_classesDiam_btn", "Mettre à jour les données", style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
                                      tags$style(type='text/css', "#save_classesDiam_btn{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #save_classesDiam_btn:hover { color:#000 !important;border-color:#979494 !important;}")
                               )
                             )
@@ -145,7 +145,7 @@ body <- dashboardBody(
                        ),
                        column(width = 8,
                           box(
-                            h5(strong("Variables pour le modèle de recrutement")),width = "100%",
+                            h5(strong("Selection des variables pour le modèle de recrutement")),width = "100%",
                             fluidRow(
                               column(width = 6, id= "table_Nb_Arbres_col",
                                  box(
@@ -170,6 +170,14 @@ body <- dashboardBody(
                             )
                           )
                        )
+                     ),
+                     fluidRow(
+                       column(width= 6, 
+                              textInput("dyn_param_out_filename", "Fichier des paramètres de la dynamique",  placeholder = "Nom du fichier de sortie des paramètres de dynamique", width = "100%")
+                       ),
+                       column(width= 6, 
+                              textInput("sim_data_out_filename", "Fichier des données de simulation",  placeholder = "Nom du fichier de sortie des données de simulation", width = "100%")
+                       )
                      )
                   )
                 )        
@@ -179,9 +187,17 @@ body <- dashboardBody(
                   box( 
                     width = "100%",
                     fluidRow(
-                      column(width= 4, 
+                      column(id ='calculate_param_dyn_col', width= 12, 
                              actionButton("calculate_param_dyn_btn", "Calculer les paramètres", style="color: #fff; background-color: #337ab7; border-color: #2e6da4;"),
                              tags$style(type='text/css', "#calculate_param_dyn_btn{color: #fff; background-color: #337ab7; border-color: #2e6da4;font-weight: bold; margin-right: 4px;} #calculate_param_dyn_btn:hover { color:#000 !important;border-color:#979494 !important;}")
+                      ),
+                      shinyjs::hidden(column(id ='boxloader_CalculateParamDyn', width =12,
+                                             div(id="img_loader_CalculateParamDyn", img(src= "trait_loader.gif", width= "100px")),
+                                             tags$style(type='text/css', "#img_loader_CalculateParamDyn { text-align: center;}"),
+                                             div(id="load_CalculateParamDyn_encours", strong(paste0(uiOngoingTreatment, " ..."))),
+                                             tags$style(type='text/css', "#load_CalculateParamDyn_encours {text-align: center;}")
+                      )
+                      #tags$style(type='text/css', "#boxloader_SCD { position: fixed; left: 0%; top: 20%; z-index: 2;}")
                       )
                     )
                   )

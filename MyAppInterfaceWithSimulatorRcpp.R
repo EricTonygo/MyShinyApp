@@ -433,7 +433,7 @@ FCMplot<-function(ParamSim,Effectifs,SpeciesTraits,out.InferFCM,LoggingFunction,
   # } # Fin boucle du k, r?p?tition MC
   browser()
   start_time <- Sys.time()
-  test = doMySimulationLoop(nbchain, Fin.simu, NbObsParIter, Effectifs, DelayAfterLogging, Exploitations,
+  RecEffectifs = doMySimulationLoop(nbchain, Fin.simu, NbObsParIter, Effectifs, DelayAfterLogging, Exploitations,
                                      RecruitmentModel, MortalityModel, GrowthModel, LoggingFunction, SimMort, 
                                      RepListeNomsp, SimRecrut, SimGrowth, Surface, intensity.matrix, 
                                      RepClasseDiam,  RecEffectifsTmp, RecEffectifs)
