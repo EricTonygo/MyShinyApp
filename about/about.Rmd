@@ -24,6 +24,9 @@ output: html_document
       <a id= "ref-sim-dyn" href="#sim-dyn" >La simulation de la dynamique forestière </a>
       <ol style="font-size: 14px;">
           <li>
+              <a id="ref-choice-param-dyn" href="#choice-param-dyn">Choix des paramètres de la dynamique.</a>
+          </li>
+          <li>
               <a id="ref-scenario-exp" href="#scenario-exp">Scénario d'exploitation forestière.</a>
           </li>
           <li>
@@ -63,6 +66,13 @@ output: html_document
 
 ## <a id="pres-dafsim" href="#ref-pres-dafsim">Présentation générale de DafSim </a>
 
+__DafSim__ est un logiciel de simulation dont le but est d'aider les gestionnaires des exploitations forestières à améliorer leurs pratiques de gestion forestière. Il offre un simulateur de la dynamique forestière et des outils de visualisation des résultats de la simulation à travers le calcul et le tracé de l'évolution de certains indicateurs pertinents de la gestion forestière.
+Nous présenterons à la suite de cette partie, l'architecture de l'interface graphique de cette application qui permet d'avoir accès aux fonctionnalités du logiciel.
+Nous avons adopté une structure simple en matière de graphisme en vue de permettre à l’utilisateur de retrouver et d’accéder facilement aux informations. L’interface comporte trois parties principales à savoir:
+* L’entête : la bande bleue au-dessus comportant simple le nom que nous avons attribué à l’application à savoir : « DafSim ». c’est un bloc statique, il reste fixe durant toute la navigation de l’utilisateur.
+* Le bloc latéral : la bande verticale noire comportant les différentes fonctionnalités de nos modules et les différentes    rubriques de notre application. Nous les avons présentés ici sous forme de menu : « Accueil », « Simulation » (le module de simulation), « Visualisation » (le module de visualisation des résultats issus de l’analyse des données) et « Aide »    (la rubrique réservée au manuel d’utilisation). Il est aussi statique.
+* Le bloc central à l’intérieur duquel nous affichons les informations liées à chaque rubrique. C’est le seul bloc dynamique de l’application. Nous l’utiliserons le plus souvent pour interagir avec l’application
+
 ### <a id="objectif-dafsim" href="#ref-objectif-dafsim">Objectif de DafSim </a>
 
 DafSim est un logiciel de simulation dont le but est d'aider les gestionnaires des exploitations forestières dans leurs pratiques de gestion forestière. Il vous offre un simulateur de la dynamique forestière et des outils de visualisation des résultats de la simulation à travers le calcul de certains indicateurs pertinents de la gestion forestière tel que:
@@ -75,7 +85,7 @@ DafSim est un logiciel de simulation dont le but est d'aider les gestionnaires d
 * Le taux de reconstitution
 * La structure diamétrique (cumulée et sous forme de repartititon par classe de diamètre)
 
-Qui permettrons de mieux évaluer sur le long terme l'état prévisionnel de la forêt soumise aux effets des exploitations forestières.
+Ces indicateurs permettrons de mieux évaluer sur le long terme l'état prévisionnel de la forêt soumise aux effets des exploitations forestières.
 
 ### <a id="ihm-dafsim" href="#ref-ihm-dafsim">Organisation de l'interface graphique de DafSim </a>
 
@@ -103,8 +113,40 @@ C’est la page qui s’affiche dès le lancement de l’application. Elle compo
 
 ## <a id="sim-dyn" href="#ref-sim-dyn">Simulation de la dynamique forestière.</a>
 
-Nous avons regroupé les fonctionnalités liées à ce module dans le menu « __Simulation__ ».    
-Pour simuler la dynamique d’une forêt, il faut réaliser un scénario d'exploitation forestière, les dégats post-exploitation et enfin de préciser les paramètres de la dynamique naturelle de cette forêt. 
+Les fonctionnalités liées à la simulation de la dynamique forestière sont regroupé dans le menu « __Simulation__ ».
+Pour simuler la dynamique d'une forêt avec logiciel DafSim, il faut au préalable choisir un fichier des parmètres de la dynamique forestière. Ensuite il faut fournir un fichier de données de dynamique réelle à utiliser. Il peut soit être un fichier csv des données de votre forêt, soit un fichier de données des sites de référence fournis avec le logiciel. Enfin, il faut préciser les paramètres de la simulation, le scénario d'exploitation forestière à réaliser, les dégats post-exploitation.
+
+````{r cars}
+
+````
+
+### <a id="choice-param-dyn" href="#ref-choice-param-dyn">Choix des paramètres de la dynamique</a>
+Le choix des paramètres de la dynamique consiste à importer un fichier au format RDS contenant les paramètres de la dynamique. Comme l'illustre la figure ci-dessous:
+
+![Page de choix des paramètres de la dynamique](images/upload_dyn_param.png "interface d'importation des paramètres de la dynamique")
+
+Le logiciel DafSim est distribué avec des fichiers au format RDS de paramètres de la dynamique de certains sites de référence. En cliquant sur le bouton __Charger les paramètres de la dynamique__, vous avez accès à tous ces fichiers et vous pouvez charger un fichier pour avoir accès aux paramètres de la dynamique.
+
+![Selectionner un fichier des paramètres de la dynamique](images/fichiers_params_dyn_sites_ref.png "interface de selection du fichier de paramètres de la dynamique")
+
+```{r pressure, echo=FALSE}
+
+```
+
+### <a id="params-dyn" href="#ref-params-dyn">Paramètres de la simulation.</a>
+La rubrique des paramètres de la simulation consiste pour l'utilisateur à fournir pour un premier temps soit un fichier de données représentant l'état initial des éffectifs des espèces par classe diamètres du site à simuler soit utiliser un fichier de données d'un site de reference distribué avec le logiciel.
+
+Pour le premier cas de figure qui consiste à fournir un fichier de donnéés des effectifs de départ, ce fichier doit être sous un format csv et doit respecter une disposition de données bien précise sous la forme d'un tableau de données avec les entêtes de colonne contenant les noms des espèces de votre forêt et les entêtes de ligne contenant les classes de diamètre que vous pouvez nommer sous la forme __Ci__ i représentant le numéro de la classe. Le nombre de classe devra correspondre à celui du fichier des paramètres de la dynamique que vous avez préalablement choisi pour votre simulation. La figure ci-dessous illustre très bien cette disposition de données.
+![Format du contenu du fichier csv des données des effectifs initiaux](images/format_data_csv.png. "Disposition des données des effectifs de départ pour une simulation")
+
+Ce fichier sera importer dans le logiciel et son contenu servira d'état initial pour les simulations. Pour afficher le bouton d'importation il faudra au préalable choisir l'option __Simuler à partir des donnés provenant d'un fichier csv__. Ensuite cliquer sur le bouton __importer un fichier__ puis parcourir votre disque à l'aide de la boite de dialogue qui apparait pour selectionner les fichier à utiliser. Voir la figure ci-après:
+
+![Importation du fichier des données de départ](images/parametres_simulation_site_with_csv.png. "Interface d'importation du fichier de données des effectifs de départ")
+
+Le second cas de figure pour le chox des données des effectifs de départ pour la simulation, consiste à utiliser l'un fichier de données au format RDS des sites de reference que nous avons choisi de distribuer avec le logiciel. Ce choix doit être judicieusement fait car initialement, le fichier des effectifs de départ doit correspondre à celui des paramètres de la dynamique que vous avez choisi, danss un second temps, veuillez verifier que votre forêt a le même découpage en classe de diamètre que celui du site utliser pour vous paramètre de la dynamique et en fin, la dynamique des espèces des votre forêt doit être proche ou correspondre à celle des espèces de votre forêt. 
+
+
+
 
 ```{r pressure, echo=FALSE}
 
@@ -163,7 +205,7 @@ En cliquant sur le deuxième onglet de la page du menu « __Simulation__ » vous
 
 Une fois le scénario d'exploitation forestière réalisé, les dégats post-exploitation précisés et les paramètres de la dynamique forestière naturelle remplies, Vous avez deux actions possibles à réaliser
 * Lancer la simulation de la dynamique forestière en cliquant sur le bouton __Lancer la simulation__ juste en dessous
-* Sauvegarder les paramètres de la simulation dans un fichier de données au format .RData en cliquant sur le bouton __Sauvegarder le scénario__
+* Sauvegarder les paramètres de la simulation dans un fichier de données au format .RData en cliquant sur le bouton. __Sauvegarder le scénario__
 
 Si auparavant vous avez sauvegardé les paramètres de la simulation dans un fichier de données vous pouvez le charger ces paramètres à partir de ce fichier existant dans un disque dur ou un support amovible de votre ordinateur en cliquant sur le bouton __Charger un scénario__
 

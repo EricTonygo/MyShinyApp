@@ -101,6 +101,13 @@ shinyServer(function(input, output, session){
   Noms1=paste("Indicateurs",list.files("Indicateurs"),sep='/')
   Noms2=paste(IndicatorsFolder,list.files("Indicateurs"),sep='/')
   file.copy(Noms1,Noms2, overwrite = TRUE) 
+  
+  ############################## Base de données de fichiers RDS de Simulation des sites pour les parcelles ##############################
+  DataCampagnesFolder <<- path.expand(path="~/DafSim/DataCampagnes")
+  if(!dir.exists(DataCampagnesFolder)) {
+    dir.create(DataCampagnesFolder, recursive = TRUE)
+  }
+  dataCampagnesFilename  = paste(DataCampagnesFolder,"data_campagnes.csv",sep='/')
   #volumes <- getVolumes()
   ##################################################################################################################################
   #initialisation du dossier par defaut dans lequel se feront la sauvegarde et le chargement des paramètrages des simulations
@@ -546,10 +553,21 @@ shinyServer(function(input, output, session){
   })
   
   
-  ################################ Uploading file data campagnes ##############################
-  uploadFileDataCampagnes <- reactive({
+  ################################ Uploading partial file data campagnes ##############################
+  uploadPartialFileDataCampagnes <- reactive({
     inFile <- input$file_data_campagnes
     if (!is.null(inFile)){
+      read.csv2(inFile$datapath, nrows = 2)
+    }else{
+      return(NULL)
+    }
+  })
+  
+  ################################ Uploading total file data campagnes ##############################
+  uploadTotalFileDataCampagnes <- reactive({
+    inFile <- input$file_data_campagnes
+    if (!is.null(inFile)){
+      file.copy(inFile$datapath,dataCampagnesFilename, overwrite = TRUE) 
       read.csv2(inFile$datapath)
     }else{
       return(NULL)
@@ -562,14 +580,15 @@ shinyServer(function(input, output, session){
       shinyjs::hide('bloc_table_parcelles_campagnes_selected')
       shinyjs::hide('bloc_table_species_traits')
       shinyjs::show('boxloader_FileDataCampagnes')
-      dataCampagnes = uploadFileDataCampagnes()
+      dataCampagnes = uploadTotalFileDataCampagnes()
       colHeaders = names(dataCampagnes)
       output$table_data_campagnes <-rhandsontable::renderRHandsontable({
-        rhandsontable::rhandsontable(dataCampagnes, colHeaders = colHeaders, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
+        rhandsontable::rhandsontable(dataCampagnes[c(1:50),], colHeaders = colHeaders, selectCallback = TRUE, useTypes = TRUE, width = "1000px", height = 250) %>%
           hot_table(highlightCol = TRUE, highlightRow = TRUE, contextMenu = TRUE) %>%
           hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
           hot_col(col = 2:length(colHeaders), halign = "htCenter")
       })
+      
       ListeCampagnes=sort(as.numeric(unique(as.character(dataCampagnes$Id.campagne0))))
       ListeParcelles=sort(as.numeric(unique(as.character(dataCampagnes$Id.zone))))
       TableParcellesCampagnesSelected = matrix(data = rep(TRUE, length(ListeParcelles)*length(ListeCampagnes)), nrow = length(ListeParcelles), ncol = length(ListeCampagnes), dimnames = list(ListeParcelles, ListeCampagnes))
@@ -579,6 +598,7 @@ shinyServer(function(input, output, session){
           hot_cols(columnSorting = TRUE, manualColumnResize=TRUE, fixedColumnsLeft=1) %>%
            hot_col(col = 1:ncol(TableParcellesCampagnesSelected), halign = "htCenter")
       })
+
       SpeciesTraitsInferTmp = dataCampagnes[c("Id.sp", "Nom.sp")]
       SpeciesTraitsInfer= SpeciesTraitsInferTmp[!duplicated(SpeciesTraitsInferTmp[, 1]),]
       SpeciesTraitsInfer = data.frame(SpeciesTraitsInfer[order(SpeciesTraitsInfer$Id.sp),], DME=80, WSG="", stringsAsFactors = F)
@@ -648,13 +668,14 @@ shinyServer(function(input, output, session){
   
   ################################ Calculate dynamic parameters ##############################
   observeEvent(input$calculate_param_dyn_btn, {
-    # tryCatch({
+    tryCatch({
       shinyjs::hide('calculate_param_dyn_col')
       shinyjs::show('boxloader_CalculateParamDyn')
       # DataCampagnesFormatted = hot_to_r(input$table_data_campagnes)
-      # DataCampagnesFormatted = subset(DataCampagnesFormatted, !is.null(Id.sp)&!is.na(Id.sp)&Id.sp!="")
-      browser()
-      DataCampagnesFormatted = read.csv2("dataCampagnes2.csv")
+      DataCampagnesFormatted = read.csv2(dataCampagnesFilename)
+      DataCampagnesFormatted = subset(DataCampagnesFormatted, !is.null(Id.sp)&!is.na(Id.sp)&Id.sp!="")
+      
+      
       names(DataCampagnesFormatted) <- c("Id.zone", "Id.sp", "Nom.sp", "Diam0", "Diam1", "Id.campagne0", "Id.campagne1", "Surface.zone")
       DataCampagnesFormatted$Id.zone = as.factor(as.character(DataCampagnesFormatted$Id.zone))
       DataCampagnesFormatted$Id.sp = as.factor(as.character(DataCampagnesFormatted$Id.sp))
@@ -666,24 +687,24 @@ shinyServer(function(input, output, session){
       DataCampagnesFormatted$Surface.zone = as.numeric(DataCampagnesFormatted$Surface.zone)
     
       
-      ListeParcellesCampangesMB=Table.Parcelles.Campagnes.selected.MBaiki(DataCampagnesFormatted)
-      # SelectedParcelleCampagnes <-  hot_to_r(input$table_parcelles_campagnes_selected)
-      # SelectedParcelleCampagnes = subset(SelectedParcelleCampagnes, SelectedParcelleCampagnes[[1]]%in%c(TRUE, FALSE))
-      # In = as.numeric(as.vector(t(SelectedParcelleCampagnes)))
-      # ListeCampagnes=sort(as.numeric(unique(as.character(DataCampagnesFormatted$Id.campagne0))))
-      # ListeParcelles=as.factor(sort(unique(as.character(DataCampagnesFormatted$Id.zone))))
-      # ListeParcellesCampangesMB=data.frame(expand.grid(Id.campagne=ListeCampagnes, Id.zone=ListeParcelles),In=In)
+      ListeParcellesCampangesMB1=Table.Parcelles.Campagnes.selected.MBaiki(DataCampagnesFormatted)
+      SelectedParcelleCampagnes <-  hot_to_r(input$table_parcelles_campagnes_selected)
+      SelectedParcelleCampagnes = subset(SelectedParcelleCampagnes, SelectedParcelleCampagnes[[1]]%in%c(TRUE, FALSE))
+      In = as.numeric(as.vector(t(SelectedParcelleCampagnes)))
+      ListeCampagnes=sort(as.numeric(unique(as.character(DataCampagnesFormatted$Id.campagne0))))
+      ListeParcelles=as.factor(sort(unique(as.character(DataCampagnesFormatted$Id.zone))))
+      ListeParcellesCampangesMB2=data.frame(expand.grid(Id.campagne=ListeCampagnes, Id.zone=ListeParcelles),In=In)
+      browser()
       SpeciesTraitsInfer = hot_to_r(input$table_species_traits)
       SpeciesTraitsInfer = subset(SpeciesTraitsInfer, !is.null(Id.sp)&!is.na(Id.sp)&Id.sp!="")
-      browser()
-      names(SpeciesTraitsInfer) <- c("Id.sp", "Nom.sp", "DME", "WSG")
-      SpeciesTraitsInfer$Id.sp = as.factor(as.character(SpeciesTraitsInfer$Id.sp))
-      SpeciesTraitsInfer$Nom.sp = as.factor(as.character(SpeciesTraitsInfer$Nom.sp))
-      SpeciesTraitsInfer$DME = as.numeric(SpeciesTraitsInfer$DME)
-      SpeciesTraitsInfer$WSG = as.numeric(SpeciesTraitsInfer$WSG)
-      DataSelected=SelectData(DataCampagnesFormatted,ListeParcellesCampangesMB,SpeciesTraitsInfer)
       
-      
+      #if(c("Id.sp", "Nom.sp", "DME", "WSG") %in% names(SpeciesTraitsInfer)){
+        SpeciesTraitsInfer$Id.sp = as.factor(as.character(SpeciesTraitsInfer$Id.sp))
+        SpeciesTraitsInfer$Nom.sp = as.factor(as.character(SpeciesTraitsInfer$Nom.sp))
+        SpeciesTraitsInfer$DME = as.numeric(SpeciesTraitsInfer$DME)
+        SpeciesTraitsInfer$WSG = as.numeric(SpeciesTraitsInfer$WSG)
+      #}
+      DataSelected=SelectData(DataCampagnesFormatted,ListeParcellesCampangesMB1,SpeciesTraitsInfer)
       
       # Diameter classes in cm 
       ClassesDiam = hot_to_r(input$table_classes_diam)$classesDiametre
@@ -708,7 +729,6 @@ shinyServer(function(input, output, session){
       NomFileSimData=input$sim_data_out_filename
       NomFileSimData =  ifelse(is.null(NomFileSimData) | is.na(NomFileSimData) | NomFileSimData=="", "DefaultSimDataFile", NomFileSimData)
       PathFilesSimData = paste0(DataSimFolder, '/', NomFileSimData)
-      browser()
       DataInfered=InferFCM(DataSelected, ClassesDiam, Models, VarRecrut, UserListApartSpecies,  PathFilesSimData)
       
       NomFileDynParams=input$dyn_param_out_filename
@@ -718,9 +738,9 @@ shinyServer(function(input, output, session){
       showNotification("Inference successfully ended!", duration = 10, type = "message")
       shinyjs::hide('boxloader_CalculateParamDyn')
       shinyjs::show('calculate_param_dyn_col')
-    # },error=function(e){
-    #   
-    # })
+    },error=function(e){
+
+    })
   })
   
   
@@ -740,7 +760,7 @@ shinyServer(function(input, output, session){
                          min = 1, max = NbClasseDiam, step = 1)
       updateNumericInput(session, "classMax", value = NbClasseDiam,
                          min = 1, max = NbClasseDiam, step = 1)
-      updateSliderInput(session, "yearslider_strDiam", value = StoreTime[1], min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
+      
       if(!is.null(DataType) &&  DataType == "sentier"){
         updateSelectizeInput(session, "groupe_espece_indicateur", choices = ParamSim$Essence,
                              selected = ParamSim$Essence,  server = TRUE)
@@ -752,9 +772,11 @@ shinyServer(function(input, output, session){
         updateSelectizeInput(session, "groupe_espece_strDia", choices = ResultFCM$SpeciesTraits$Nom.sp,
                              selected = NULL,  server = TRUE)
       }
+      shinyjs::show("slider_SD")
+      shinyjs::show("yearrange_indicateur")
+      updateSliderInput(session, "yearslider_strDiam", value = StoreTime[1], min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
       updateSliderInput(session, "yearrange_indicateur", value = c(StoreTime[1], StoreTime[length(StoreTime)]),
                         min = StoreTime[1], max = StoreTime[length(StoreTime)], step = 1)
-     
     }
     
   }
@@ -1648,29 +1670,29 @@ shinyServer(function(input, output, session){
           )
         }
       })
-      # tryCatch({
+      tryCatch({
         print("Start Sim")
         simulation.input()
         print("End Sim")
-      # }, error=function(e){
-      #   if(hidable){
-      #     shinyjs::hide('loader_sim')
-      #     shinyjs::hide('sim_encours')
-      #     shinyjs::show('image_failure')
-      #     shinyjs::show('sim_failure')
-      #     shinyjs::hide('action_save_sim_file')
-      #     shinyjs::show('actions_sim')
-      #     shinyjs::hide('lancer_sim_col')
-      #     shinyjs::show('gotoparameters_col')
-      #   }
-      #   showModal(modalDialog(
-      #     title=uiError,
-      #     size = "m",
-      #     footer = modalButton(uiClose),
-      #     e$message
-      #   )
-      #   )
-      # })
+      }, error=function(e){
+        if(hidable){
+          shinyjs::hide('loader_sim')
+          shinyjs::hide('sim_encours')
+          shinyjs::show('image_failure')
+          shinyjs::show('sim_failure')
+          shinyjs::hide('action_save_sim_file')
+          shinyjs::show('actions_sim')
+          shinyjs::hide('lancer_sim_col')
+          shinyjs::show('gotoparameters_col')
+        }
+        showModal(modalDialog(
+          title=uiError,
+          size = "m",
+          footer = modalButton(uiClose),
+          e$message
+        )
+        )
+      })
     }
   })
   
@@ -2618,7 +2640,7 @@ shinyServer(function(input, output, session){
   observeEvent(input$load_dyn,{
     SimSiteName <<- getCSVSiteName();
     SimSiteNameFile <<- NULL
-    # tryCatch({
+    tryCatch({
       shinyjs::hide('load_dyn')
       shinyjs::hide('bloc_parameters_logging')
       shinyjs::hide('bloc_parameters_simulation')
@@ -2699,17 +2721,17 @@ shinyServer(function(input, output, session){
         shinyjs::show('load_dyn')
       }
       
-    # },error=function(e){
-    #   shinyjs::hide('boxloader_FileDyn')
-    #   shinyjs::show('load_dyn')
-    #   showModal(modalDialog(
-    #     title=uiErrorWhileLoading,
-    #     size = "m",
-    #     footer = modalButton(uiClose),
-    #     e$message
-    #     )
-    #   )
-    # })
+    },error=function(e){
+      shinyjs::hide('boxloader_FileDyn')
+      shinyjs::show('load_dyn')
+      showModal(modalDialog(
+        title=uiErrorWhileLoading,
+        size = "m",
+        footer = modalButton(uiClose),
+        e$message
+        )
+      )
+    })
   })
   
   ######Fonction du tracé de la structure diametrique et de l'affichage des données de l'évolution dans le temps###########

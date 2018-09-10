@@ -673,7 +673,7 @@ body <- dashboardBody(
                 fluidRow(
                   column(width = 12,
                          sliderInput("yearrange_indicateur", label = uiYearsRange, min = 2010, 
-                                     max = 2030, value = c(2015, 2025), step=1, sep=""),
+                                     max = 2030, value = c(2015, 2025), step=1, sep="", dragRange = FALSE),
                          checkboxInput("verif_indicator", strong(uiValidationWithRealData), FALSE)
                   )
                 ),
@@ -760,10 +760,11 @@ body <- dashboardBody(
                                     choices = listChoicesSDType, inline = TRUE)
                 )
               ),
-              shinyjs::hidden(fluidRow(id="slider_SD",
+              shinyjs::hidden(
+                fluidRow(id="slider_SD",
                                        column(width =12  ,
                                               sliderInput("yearslider_strDiam", label = uiYear, min = 2010, 
-                                                          max = 2030, value =  2025, step=1, sep="")
+                                                          max = 2030, value =  2025, step=1, sep="", dragRange = FALSE)
                                        )
               )), 
               fluidRow(

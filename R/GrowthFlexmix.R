@@ -719,7 +719,6 @@ GrowthFlexmix <- function(Data,ClassesDiam,UserListApartSpecies,criterion="BIC")
   ##################################################################################
   ##################################################################################
   
-  
   DelaysSensus=unique(Data$Nb.period)
   NbClasse=length(ClassesDiam)
   
